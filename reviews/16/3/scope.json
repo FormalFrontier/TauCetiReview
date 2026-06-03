@@ -1,0 +1,30 @@
+{
+  "returncode": 1,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "",
+  "usage": null,
+  "session_id": "019e8bf1-5660-7670-a6da-a851d07b963c",
+  "event_types": [
+    "thread.started",
+    "turn.started",
+    "error",
+    "turn.failed"
+  ],
+  "error_events": [
+    {
+      "type": "error",
+      "message": "Quota exceeded. Check your plan and billing details."
+    },
+    {
+      "type": "turn.failed",
+      "error": {
+        "message": "Quota exceeded. Check your plan and billing details."
+      }
+    }
+  ],
+  "raw_stdout": "{\"type\":\"thread.started\",\"thread_id\":\"019e8bf1-5660-7670-a6da-a851d07b963c\"}\n{\"type\":\"turn.started\"}\n{\"type\":\"error\",\"message\":\"Quota exceeded. Check your plan and billing details.\"}\n{\"type\":\"turn.failed\",\"error\":{\"message\":\"Quota exceeded. Check your plan and billing details.\"}}\n",
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "scope",
+  "verdict_obj": null
+}
