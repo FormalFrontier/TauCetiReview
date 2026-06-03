@@ -1,0 +1,45 @@
+{
+  "returncode": 0,
+  "raw_stderr": "",
+  "text": "```json\n{\n  \"verdict\": \"approve\",\n  \"summary\": \"The added theorem `two_pos : 0 < 2` is mathematically correct and faithfully states a standard positivity fact. No mis-formalization, vacuity, or placeholder issues.\",\n  \"findings\": []\n}\n```",
+  "cost_usd": 0.03533925,
+  "usage": {
+    "input_tokens": 3,
+    "cache_creation_input_tokens": 7085,
+    "cache_read_input_tokens": 18465,
+    "output_tokens": 74,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 7085
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 3,
+        "output_tokens": 74,
+        "cache_read_input_tokens": 18465,
+        "cache_creation_input_tokens": 7085,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 7085,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "session_id": "65e87704-bfe8-4688-bf60-8559ea3c492b",
+  "provider": "claude",
+  "model": "claude-sonnet-4-6",
+  "rubric": "correctness",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "The added theorem `two_pos : 0 < 2` is mathematically correct and faithfully states a standard positivity fact. No mis-formalization, vacuity, or placeholder issues.",
+    "findings": []
+  }
+}

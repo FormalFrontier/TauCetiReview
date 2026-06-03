@@ -1,0 +1,53 @@
+{
+  "returncode": 0,
+  "raw_stderr": "",
+  "text": "```json\n{\n  \"verdict\": \"block\",\n  \"summary\": \"The PR adds a self-described throwaway lemma (`two_pos : 0 < 2`) with no connection to any roadmap target. The docstring explicitly states it exists only to exercise the review harness, which is not a valid scope justification.\",\n  \"findings\": [\n    {\n      \"file\": \"TauCeti/Basic.lean\",\n      \"line\": 16,\n      \"issue\": \"No roadmap path: `two_pos` is not required by any node in JacobianChallenge, PDE, ReductiveGroups, or UniversalCovers, and the PR description offers no prerequisite claim. The docstring admits it is a throwaway.\",\n      \"fix\": \"Remove the lemma. If a harness stress-test is genuinely needed, open a meta-issue; if the arithmetic fact is needed downstream, identify the roadmap node and add it there.\",\n      \"evidence\": \"Grep of `./roadmap/` finds no reference to `two_pos`, `0 < 2`, or any arithmetic numeral bound. Docstring reads: 'A throwaway lemma, used only to exercise the review harness.'\"\n    }\n  ]\n}\n```",
+  "cost_usd": 0.14352079999999998,
+  "usage": {
+    "input_tokens": 4,
+    "cache_creation_input_tokens": 8180,
+    "cache_read_input_tokens": 43908,
+    "output_tokens": 687,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 8180
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 1,
+        "output_tokens": 294,
+        "cache_read_input_tokens": 25443,
+        "cache_creation_input_tokens": 1202,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 1202,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "session_id": "24d578f4-6f3e-41bb-b758-45eaae055ec5",
+  "provider": "claude",
+  "model": "claude-sonnet-4-6",
+  "rubric": "scope",
+  "verdict_obj": {
+    "verdict": "block",
+    "summary": "The PR adds a self-described throwaway lemma (`two_pos : 0 < 2`) with no connection to any roadmap target. The docstring explicitly states it exists only to exercise the review harness, which is not a valid scope justification.",
+    "findings": [
+      {
+        "file": "TauCeti/Basic.lean",
+        "line": 16,
+        "issue": "No roadmap path: `two_pos` is not required by any node in JacobianChallenge, PDE, ReductiveGroups, or UniversalCovers, and the PR description offers no prerequisite claim. The docstring admits it is a throwaway.",
+        "fix": "Remove the lemma. If a harness stress-test is genuinely needed, open a meta-issue; if the arithmetic fact is needed downstream, identify the roadmap node and add it there.",
+        "evidence": "Grep of `./roadmap/` finds no reference to `two_pos`, `0 < 2`, or any arithmetic numeral bound. Docstring reads: 'A throwaway lemma, used only to exercise the review harness.'"
+      }
+    ]
+  }
+}
