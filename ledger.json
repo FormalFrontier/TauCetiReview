@@ -1,6 +1,6 @@
 {
   "days": {
-    "2026-06-03": 1.112398
+    "2026-06-03": 1.304591
   },
   "prs": {
     "21": {
@@ -70,6 +70,25 @@
             "proof-quality": "approve"
           },
           "head_sha": "a0da47a9b901a79eafa0f3e263a0e6e1a2208ee4",
+          "rubrics_version": "dccacfb6e0bf58e2",
+          "full": true
+        }
+      ]
+    },
+    "24": {
+      "rounds": [
+        {
+          "round": 1,
+          "ts": "2026-06-03T21:14:13.829659+00:00",
+          "overall": "blocked",
+          "cost": 0.192193,
+          "verdicts": {
+            "scope": "block",
+            "correctness": "approve",
+            "reuse": "block",
+            "proof-quality": "approve"
+          },
+          "head_sha": "e5a44d24fd9bf0884c712f6a4cfc6fde19c186a8",
           "rubrics_version": "dccacfb6e0bf58e2",
           "full": true
         }
