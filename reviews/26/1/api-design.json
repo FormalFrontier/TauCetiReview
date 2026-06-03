@@ -1,0 +1,53 @@
+{
+  "returncode": 0,
+  "raw_stderr": "",
+  "text": "The Homeomorph tautological-action file faithfully mirrors the Mathlib `Equiv.Perm.applyMulAction` API (instance + `@[simp] smul_def` + `applyFaithfulSMul`), so that surface is complete. For `Deck`, the surface is minimal, bodies are unexposed, and `mem_iff`/`comp_eq`/`proj_smul` give the membership and projection characterization. One automation gap.\n\nVerifying the smul bridge: `Subgroup.smul_def` (`./mathlib/Mathlib/Algebra/Group/Subgroup/Actions.lean:35`) is *not* `@[simp]`, and `Homeomorph.smul_def` only matches a `Y \u2243\u209c Y` element, not a bundled `Deck p` element. So `p (h \u2022 e)` cannot be reduced by `comp_eq` (`@[simp]`) under simp \u2014 `proj_smul` is the only lemma that closes it, yet it is not `@[simp]`.\n\nTAUCETI-VERDICT-847726660e0a005a2f6aee9a\n\n{\"verdict\": \"request_changes\", \"summary\": \"Minimal surface, bodies hidden, and the membership/projection characterization is present. The key equivariance lemma proj_smul lacks @[simp] even though no simp lemma can otherwise reduce p (h \u2022 e).\", \"findings\": [{\"file\": \"TauCeti/AlgebraicTopology/UniversalCover/Deck.lean\", \"line\": \"59\", \"issue\": \"proj_smul (p (h \u2022 e) = p e) is the characteristic equivariance lemma for the action but is not @[simp]. comp_eq is @[simp] but cannot rewrite p (h \u2022 e): Subgroup.smul_def is not a simp lemma and Homeomorph.smul_def matches only E \u2243\u209c E elements, not Deck p, so p (h \u2022 e) is stuck under simp.\", \"fix\": \"Add @[simp] to proj_smul (LHS strictly simpler, fires only on this pattern, terminates).\", \"evidence\": \"./mathlib/Mathlib/Algebra/Group/Subgroup/Actions.lean:35 `lemma smul_def ... := rfl` has no @[simp]; Homeomorph.smul_def at Homeomorph.lean:34 is keyed on `(f : Y \u2243\u209c Y) \u2022 x`.\"}]}",
+  "cost_usd": 0.379498,
+  "usage": {
+    "input_tokens": 2455,
+    "cache_creation_input_tokens": 18432,
+    "cache_read_input_tokens": 172527,
+    "output_tokens": 6459,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 18432
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 3303,
+        "cache_read_input_tokens": 35247,
+        "cache_creation_input_tokens": 504,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 504,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "session_id": "43baf392-b8b4-4dbc-9bba-e1bc44b37bbd",
+  "provider": "claude",
+  "model": "claude-opus-4-8",
+  "rubric": "api-design",
+  "verdict_obj": {
+    "verdict": "request_changes",
+    "summary": "Minimal surface, bodies hidden, and the membership/projection characterization is present. The key equivariance lemma proj_smul lacks @[simp] even though no simp lemma can otherwise reduce p (h \u2022 e).",
+    "findings": [
+      {
+        "file": "TauCeti/AlgebraicTopology/UniversalCover/Deck.lean",
+        "line": "59",
+        "issue": "proj_smul (p (h \u2022 e) = p e) is the characteristic equivariance lemma for the action but is not @[simp]. comp_eq is @[simp] but cannot rewrite p (h \u2022 e): Subgroup.smul_def is not a simp lemma and Homeomorph.smul_def matches only E \u2243\u209c E elements, not Deck p, so p (h \u2022 e) is stuck under simp.",
+        "fix": "Add @[simp] to proj_smul (LHS strictly simpler, fires only on this pattern, terminates).",
+        "evidence": "./mathlib/Mathlib/Algebra/Group/Subgroup/Actions.lean:35 `lemma smul_def ... := rfl` has no @[simp]; Homeomorph.smul_def at Homeomorph.lean:34 is keyed on `(f : Y \u2243\u209c Y) \u2022 x`."
+      }
+    ]
+  }
+}

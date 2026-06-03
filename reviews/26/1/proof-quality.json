@@ -1,0 +1,22 @@
+{
+  "returncode": 0,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "TAUCETI-VERDICT-8ed8f6f22b6f7fbbbd14ae72\n{\"verdict\":\"approve\",\"summary\":\"No proof-quality issues found in the visible diff; the proofs are short, direct, and do not use undocumented `change`/`show` or brittle named-lemma chains.\",\"findings\":[]}",
+  "usage": {
+    "input_tokens": 30514,
+    "cached_input_tokens": 20224,
+    "output_tokens": 812,
+    "reasoning_output_tokens": 379
+  },
+  "session_id": "019e8fe8-7d5a-7a41-8c4f-26253f415d43",
+  "cost_usd": 0.046262,
+  "cost_estimated": true,
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "proof-quality",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "No proof-quality issues found in the visible diff; the proofs are short, direct, and do not use undocumented `change`/`show` or brittle named-lemma chains.",
+    "findings": []
+  }
+}

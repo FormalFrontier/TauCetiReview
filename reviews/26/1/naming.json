@@ -1,0 +1,22 @@
+{
+  "returncode": 0,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "TAUCETI-VERDICT-67a3c17a605bc3ee350ef653\n{\"verdict\":\"approve\",\"summary\":\"Names describe the introduced objects and conclusions at the expected strength, and no notation is introduced. I found no naming or notation issue material enough to request changes.\",\"findings\":[]}",
+  "usage": {
+    "input_tokens": 46177,
+    "cached_input_tokens": 35456,
+    "output_tokens": 1634,
+    "reasoning_output_tokens": 1125
+  },
+  "session_id": "019e8fe7-ac47-7d40-be31-67eb0b6a599c",
+  "cost_usd": 0.074061,
+  "cost_estimated": true,
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "naming",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "Names describe the introduced objects and conclusions at the expected strength, and no notation is introduced. I found no naming or notation issue material enough to request changes.",
+    "findings": []
+  }
+}

@@ -1,4 +1,213 @@
 {
-  "days": {},
-  "prs": {}
+  "days": {
+    "2026-06-03": 1.41115
+  },
+  "prs": {
+    "26": {
+      "rounds": [
+        {
+          "round": 1,
+          "ts": "2026-06-03T23:54:25.737963+00:00",
+          "mode": "commit",
+          "ran": [
+            "scope",
+            "correctness",
+            "reuse",
+            "attribution",
+            "api-design",
+            "generality",
+            "placement",
+            "naming",
+            "documentation",
+            "proof-quality",
+            "deprecation"
+          ],
+          "states": {
+            "scope": "green",
+            "correctness": "green",
+            "reuse": "green",
+            "attribution": "green",
+            "api-design": "blocking_request",
+            "generality": "green",
+            "placement": "green",
+            "naming": "green",
+            "documentation": "blocking_request",
+            "proof-quality": "green",
+            "deprecation": "green"
+          },
+          "cost": 1.41115,
+          "head_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "rubrics_version": "dccacfb6e0bf58e2"
+        }
+      ],
+      "state": {
+        "scope": {
+          "rubric": "scope",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "The PR ports the deck transformation group Deck p from mathlib4#40135, which the UniversalCovers roadmap names verbatim as Stage 0 item 4 and as the prerequisite for the Stage 1 target Deck(proj) \u2243* FundamentalGroup. The vendored Homeomorph.applyMulAction is the genuine prerequisite action the same node calls for, making this one coherent unit.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        },
+        "correctness": {
+          "rubric": "correctness",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "The new `Deck p` definition faithfully formalizes deck transformations as self-homeomorphisms of `E` over an arbitrary map `p : E \u2192 X`, and the action/continuity instances match the visible subgroup-action construction. I found no semantic mis-formalization, vacuity, or prerequisite smuggling in the diff.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        },
+        "reuse": {
+          "rubric": "reuse",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "No reuse or duplication issue is apparent in this PR: the new `Deck p` API and the vendored homeomorphism evaluation action are narrowly scoped and match the stated missing prerequisite.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        },
+        "attribution": {
+          "rubric": "attribution",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "The added files credit the stated Mathlib draft PR and author in both headers/module docs, including the vendored `Homeomorph.applyMulAction` material. I found no attribution issue from the provided diff; local grep was unavailable due a sandbox setup failure before shell startup.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        },
+        "api-design": {
+          "rubric": "api-design",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "request_changes",
+          "confidence": null,
+          "summary": "Minimal surface, bodies hidden, and the membership/projection characterization is present. The key equivariance lemma proj_smul lacks @[simp] even though no simp lemma can otherwise reduce p (h \u2022 e).",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicTopology/UniversalCover/Deck.lean",
+              "line": "59",
+              "issue": "proj_smul (p (h \u2022 e) = p e) is the characteristic equivariance lemma for the action but is not @[simp]. comp_eq is @[simp] but cannot rewrite p (h \u2022 e): Subgroup.smul_def is not a simp lemma and Homeomorph.smul_def matches only E \u2243\u209c E elements, not Deck p, so p (h \u2022 e) is stuck under simp.",
+              "fix": "Add @[simp] to proj_smul (LHS strictly simpler, fires only on this pattern, terminates).",
+              "evidence": "./mathlib/Mathlib/Algebra/Group/Subgroup/Actions.lean:35 `lemma smul_def ... := rfl` has no @[simp]; Homeomorph.smul_def at Homeomorph.lean:34 is keyed on `(f : Y \u2243\u209c Y) \u2022 x`."
+            }
+          ],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": {
+            "comment_id": 3352598192,
+            "node_id": "PRRC_kwDOSup8rs7H1Jaw",
+            "path": "TauCeti/AlgebraicTopology/UniversalCover/Deck.lean"
+          },
+          "author_replies": []
+        },
+        "generality": {
+          "rubric": "generality",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "Material sits at the natural Mathlib level: `Deck p` is stated for an arbitrary map with no covering hypothesis and no topology on `X`, and the vendored `Homeomorph.applyMulAction` carries only the intrinsic `[TopologicalSpace Y]`. No unused/too-strong assumptions or special-case duplication.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        },
+        "placement": {
+          "rubric": "placement",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "The new declarations are placed in natural homes for their dependency level: generic homeomorphism-action instances under `TauCeti.Topology.Algebra`, and the roadmap-facing deck transformation subgroup under `TauCeti.AlgebraicTopology.UniversalCover`. The imports are direct and topic-specific rather than broad.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        },
+        "naming": {
+          "rubric": "naming",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "Names describe the introduced objects and conclusions at the expected strength, and no notation is introduced. I found no naming or notation issue material enough to request changes.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        },
+        "documentation": {
+          "rubric": "documentation",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "request_changes",
+          "confidence": null,
+          "summary": "The substantive file/module documentation is present, but a public result advertised as a main result is missing its own docstring.",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicTopology/UniversalCover/Deck.lean",
+              "line": 56,
+              "issue": "`Deck.proj_smul` is listed in the module docstring under main results, but the public theorem itself has no docstring.",
+              "fix": "Add a docstring on `Deck.proj_smul` explaining that deck transformations preserve the projection, e.g. `p (h \u2022 e) = p e`.",
+              "evidence": "Diff shows `* Deck.proj_smul`: deck transformations commute with `p` in the module docstring, followed by undocumented declaration `theorem proj_smul (h : Deck p) (e : E) : p (h \u2022 e) = p e := ...`."
+            }
+          ],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": {
+            "comment_id": 3352598245,
+            "node_id": "PRRC_kwDOSup8rs7H1Jbl",
+            "path": "TauCeti/AlgebraicTopology/UniversalCover/Deck.lean"
+          },
+          "author_replies": []
+        },
+        "proof-quality": {
+          "rubric": "proof-quality",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "No proof-quality issues found in the visible diff; the proofs are short, direct, and do not use undocumented `change`/`show` or brittle named-lemma chains.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        },
+        "deprecation": {
+          "rubric": "deprecation",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "Purely additive PR: two new files, no public declaration renamed, removed, or weakened, and no Mathlib bump. Vendored instances are namespaced under TauCeti, so no backward-compatibility concerns.",
+          "findings": [],
+          "reviewed_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "approved_sha": "890a173e295e284478b9db948c8c885bfe72e408",
+          "thread": null,
+          "author_replies": []
+        }
+      },
+      "scoreboard_comment_id": 4617686715
+    }
+  }
 }

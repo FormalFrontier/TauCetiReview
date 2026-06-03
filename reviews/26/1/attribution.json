@@ -1,0 +1,22 @@
+{
+  "returncode": 0,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "TAUCETI-VERDICT-fc0141051d3d3c8874270c63\n{\"verdict\":\"approve\",\"summary\":\"The added files credit the stated Mathlib draft PR and author in both headers/module docs, including the vendored `Homeomorph.applyMulAction` material. I found no attribution issue from the provided diff; local grep was unavailable due a sandbox setup failure before shell startup.\",\"findings\":[]}",
+  "usage": {
+    "input_tokens": 46044,
+    "cached_input_tokens": 40576,
+    "output_tokens": 612,
+    "reasoning_output_tokens": 196
+  },
+  "session_id": "019e8fe5-0fd1-7bc1-b1a7-e089120465e3",
+  "cost_usd": 0.063675,
+  "cost_estimated": true,
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "attribution",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "The added files credit the stated Mathlib draft PR and author in both headers/module docs, including the vendored `Homeomorph.applyMulAction` material. I found no attribution issue from the provided diff; local grep was unavailable due a sandbox setup failure before shell startup.",
+    "findings": []
+  }
+}

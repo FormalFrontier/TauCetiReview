@@ -1,0 +1,22 @@
+{
+  "returncode": 0,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "TAUCETI-VERDICT-31db7e58daf7017ce607b4f4\n\n{\"verdict\":\"approve\",\"summary\":\"No reuse or duplication issue is apparent in this PR: the new `Deck p` API and the vendored homeomorphism evaluation action are narrowly scoped and match the stated missing prerequisite.\",\"findings\":[]}",
+  "usage": {
+    "input_tokens": 46238,
+    "cached_input_tokens": 40576,
+    "output_tokens": 1617,
+    "reasoning_output_tokens": 1115
+  },
+  "session_id": "019e8fe4-9b42-7f11-82f3-3b103322d016",
+  "cost_usd": 0.073968,
+  "cost_estimated": true,
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "reuse",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "No reuse or duplication issue is apparent in this PR: the new `Deck p` API and the vendored homeomorphism evaluation action are narrowly scoped and match the stated missing prerequisite.",
+    "findings": []
+  }
+}
