@@ -1,0 +1,45 @@
+{
+  "returncode": 0,
+  "raw_stderr": "",
+  "text": "```json\n{\n  \"verdict\": \"approve\",\n  \"summary\": \"The single new theorem `autoTriggerCheck : 0 < 5` is a trivially correct arithmetic fact proved by `norm_num`. No mis-formalization, vacuity, or placeholder issues.\",\n  \"findings\": []\n}\n```",
+  "cost_usd": 0.035402,
+  "usage": {
+    "input_tokens": 3,
+    "cache_creation_input_tokens": 7086,
+    "cache_read_input_tokens": 18465,
+    "output_tokens": 77,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 7086
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 3,
+        "output_tokens": 77,
+        "cache_read_input_tokens": 18465,
+        "cache_creation_input_tokens": 7086,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 7086,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "session_id": "7233de48-c102-401b-882f-66bce9e6399a",
+  "provider": "claude",
+  "model": "claude-sonnet-4-6",
+  "rubric": "correctness",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "The single new theorem `autoTriggerCheck : 0 < 5` is a trivially correct arithmetic fact proved by `norm_num`. No mis-formalization, vacuity, or placeholder issues.",
+    "findings": []
+  }
+}
