@@ -1,7 +1,7 @@
 {
   "days": {
     "2026-06-03": 1.41115,
-    "2026-06-04": 8.645779
+    "2026-06-04": 9.568384
   },
   "prs": {
     "26": {
@@ -955,19 +955,19 @@
           "rubric": "reuse",
           "provider": "codex",
           "model": "gpt-5.5",
-          "verdict": "block",
+          "verdict": "request_changes",
           "confidence": null,
-          "summary": "One declaration is an outright duplicate wrapper around an existing generic topology instance rather than new TauCeti API.",
+          "summary": "One public prelude theorem adds a parallel path-connectedness API where the existing `JoinedIn` API already supplies the same data.",
           "findings": [
             {
-              "file": "TauCeti/AlgebraicTopology/FundamentalGroupoid/SemilocallySimplyConnected.lean",
-              "line": "915",
-              "issue": "`Path.Homotopic.Quotient.instTopologicalSpace` redefines the existing quotient topology instance for `Quotient _`; the body is just `inferInstanceAs (TopologicalSpace (Quotient _))`, so this adds a parallel instance for an already-topologized quotient type.",
-              "fix": "Remove this instance and rely on the existing generic `TopologicalSpace (Quotient _)` instance directly.",
-              "evidence": "The declaration itself proves the replacement: `public instance Path.Homotopic.Quotient.instTopologicalSpace ... := inferInstanceAs (TopologicalSpace (Quotient _))`."
+              "file": "TauCeti/AlgebraicTopology/FundamentalGroupoid/UniversalCoverPrelude.lean",
+              "line": "64",
+              "issue": "`IsPathConnected.exists_path` is a public wrapper around existing `IsPathConnected.joinedIn`/`JoinedIn.somePath`, creating a duplicate API for extracting a path with range in a path-connected set.",
+              "fix": "Remove this theorem and replace uses with `let h := hU.joinedIn _ ha _ hb` followed by `h.somePath` and `h.somePath_mem`.",
+              "evidence": "The theorem body itself is `let hab : JoinedIn U a b := hU.joinedIn _ ha _ hb; \u27e8hab.somePath, Set.range_subset_iff.mpr hab.somePath_mem\u27e9`, showing the existing API directly provides the data."
             }
           ],
-          "reviewed_sha": "056cad4c5d74ac45323c1e7111fd9100eb246a04",
+          "reviewed_sha": "0d60044d61ba0bfca82b5f9ef21e6985f7ce1450",
           "thread": {
             "comment_id": 3353248138,
             "node_id": "PRRC_kwDOSup8rs7H3oGK",
@@ -979,32 +979,18 @@
           "rubric": "attribution",
           "provider": "claude",
           "model": "claude-opus-4-8",
-          "verdict": "request_changes",
+          "verdict": "approve",
           "confidence": null,
-          "summary": "The work is attributed to Kim Morrison and to Mathlib PRs, but the discreteness-of-homotopy-fibres file is sourced from the wrong PR number and two of three files omit the per-file source-PR credit the roadmap requires.",
-          "findings": [
-            {
-              "file": "TauCeti/AlgebraicTopology/FundamentalGroupoid/SemilocallySimplyConnected.lean",
-              "line": 0,
-              "issue": "This file ports the discreteness-of-homotopy-class-fibres material (Path.Homotopic.Quotient.instDiscreteTopology and the SLSC strategy), which the roadmap (UniversalCovers/README.md, Stage 0 item 1) attributes to mathlib4#31576. The PR description instead cites #38292 and #31449; #31576 is credited nowhere and #31449 does not appear in the roadmap.",
-              "fix": "Confirm the correct PR number and credit mathlib4#31576 as the source of the discreteness material (likely #31449 is a typo for #31576); update the PR description accordingly.",
-              "evidence": "roadmap/TauCetiRoadmap/UniversalCovers/README.md line 68-73: 'Discreteness of homotopy-class fibres (from #31576)'; PR description names #38292 and #31449; SemilocallySimplyConnected.lean ends with Path.Homotopic.Quotient.instDiscreteTopology."
-            },
-            {
-              "file": "TauCeti/AlgebraicTopology/FundamentalGroupoid/BasedPath.lean",
-              "line": 0,
-              "issue": "Roadmap Stage 0 instructs to 'credit the original authors and source PR in each file', but BasedPath.lean and SemilocallySimplyConnected.lean name no source PR in-file (header only has 'Authors: Kim Morrison'); only UniversalCoverPrelude.lean cites #38292.",
-              "fix": "Add the source PR(s) to the module docstring/header of BasedPath.lean (#38292) and SemilocallySimplyConnected.lean (#31576), matching the prelude's convention.",
-              "evidence": "UniversalCoverPrelude.lean docstring cites 'mathlib4#38292 (Kim Morrison)'; BasedPath.lean and SemilocallySimplyConnected.lean headers/docstrings cite no PR; roadmap README line 65 'credit the original authors and source PR in each file'."
-            }
-          ],
-          "reviewed_sha": "056cad4c5d74ac45323c1e7111fd9100eb246a04",
+          "summary": "All three new files now carry in-file source-PR credit and author attribution matching the roadmap: SemilocallySimplyConnected.lean cites #31576 (discreteness) and #31449, BasedPath.lean cites #38292, and the prelude cites #38292, all crediting Kim Morrison. The prior review's two findings (missing #31576 credit, missing per-file PR credit) are resolved.",
+          "findings": [],
+          "reviewed_sha": "0d60044d61ba0bfca82b5f9ef21e6985f7ce1450",
           "thread": {
             "comment_id": 3353248175,
             "node_id": "PRRC_kwDOSup8rs7H3oGv",
             "path": "TauCeti/AlgebraicTopology/FundamentalGroupoid/SemilocallySimplyConnected.lean"
           },
-          "author_replies": []
+          "author_replies": [],
+          "approved_sha": "0d60044d61ba0bfca82b5f9ef21e6985f7ce1450"
         },
         "api-design": {
           "rubric": "api-design",
@@ -1264,6 +1250,31 @@
           },
           "cost": 6.172098,
           "head_sha": "056cad4c5d74ac45323c1e7111fd9100eb246a04",
+          "rubrics_version": "dccacfb6e0bf58e2"
+        },
+        {
+          "round": 2,
+          "ts": "2026-06-04T04:02:50.940845+00:00",
+          "mode": "commit",
+          "ran": [
+            "reuse",
+            "attribution"
+          ],
+          "states": {
+            "scope": "stale",
+            "correctness": "stale",
+            "reuse": "blocking_request",
+            "attribution": "green",
+            "api-design": "blocking_request",
+            "generality": "blocking_request",
+            "placement": "stale",
+            "naming": "blocking_request",
+            "documentation": "blocking_request",
+            "proof-quality": "blocking_request",
+            "deprecation": "stale"
+          },
+          "cost": 0.922605,
+          "head_sha": "0d60044d61ba0bfca82b5f9ef21e6985f7ce1450",
           "rubrics_version": "dccacfb6e0bf58e2"
         }
       ]
