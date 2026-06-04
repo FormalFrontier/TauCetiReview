@@ -1,0 +1,22 @@
+{
+  "returncode": 0,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "TAUCETI-VERDICT-bcf8ccfa4a4aa92a87fb0ed6\n\n{\"verdict\":\"approve\",\"summary\":\"No proof-quality issues found in the added file. The only nontrivial proof is short, readable, and does not rely on undocumented `change`/`show` or obscure definitional equality.\",\"findings\":[]}",
+  "usage": {
+    "input_tokens": 44924,
+    "cached_input_tokens": 39040,
+    "output_tokens": 773,
+    "reasoning_output_tokens": 341
+  },
+  "session_id": "019e9065-d9d9-70c3-8bb8-019e1e5322be",
+  "cost_usd": 0.063885,
+  "cost_estimated": true,
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "proof-quality",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "No proof-quality issues found in the added file. The only nontrivial proof is short, readable, and does not rely on undocumented `change`/`show` or obscure definitional equality.",
+    "findings": []
+  }
+}

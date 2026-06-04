@@ -1,0 +1,81 @@
+{
+  "returncode": 0,
+  "raw_stderr": "",
+  "text": "This is a Public-API review. The Mathlib dependencies (`GroupLike` with its `CommMonoid` instance, `Algebra.IsGeometricallyReduced`, `Algebra.FiniteType`) all check out. My findings concern the exposed surface.\n\nTAUCETI-VERDICT-1af9036ffb6d53233fd0e2b3\n\n```json\n{\n  \"verdict\": \"request_changes\",\n  \"summary\": \"The public class hierarchy exposes vacuous `True` fields, a content-free `True` lemma, and an unused `AlgPoints` definition with no API; the `IsUnipotent` characteristic API is also incomplete. The exposed interface either characterizes nothing or has no consumer.\",\n  \"findings\": [\n    {\n      \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\",\n      \"line\": \"62\",\n      \"issue\": \"`ReductiveGroup.unipotent_radical_trivial : True` and `SemisimpleGroup.radical_trivial : True` are vacuous fields. The classes are therefore definitionally `AffineAlgGroup` plus no constraint, so `ReductiveGroup`/`SemisimpleGroup` claim a characterization they do not encode \u2014 a misleading public interface (every affine algebraic group is 'reductive').\",\n      \"fix\": \"Do not expose `ReductiveGroup`/`SemisimpleGroup` until the unipotent-radical predicate exists; or carry the real predicate as the field. Exposing `True`-fielded classes as the public hierarchy now ships a placeholder masquerading as the definition.\",\n      \"evidence\": \"`unipotent_radical_trivial : True`, `radical_trivial : True` in the diff.\"\n    },\n    {\n      \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\",\n      \"line\": \"73\",\n      \"issue\": \"`ReductiveGroup.unipotentRadical_trivial'` is a public theorem of type `True`. It restates a `True` field and carries no content; it pollutes the API surface.\",\n      \"fix\": \"Remove the lemma. A consumer gains nothing from a `True`-valued restatement.\",\n      \"evidence\": \"`theorem ReductiveGroup.unipotentRadical_trivial' ... : True := h.unipotent_radical_trivial`.\"\n    },\n    {\n      \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\",\n      \"line\": \"35\",\n      \"issue\": \"`AlgPoints` is exposed but has no consumer in this PR (`IsUnipotent` operates on `GroupLike k A`, not `AlgPoints`) and ships with zero characteristic API \u2014 no coercion, no `mem`/ext lemmas. It is orphan public surface.\",\n      \"fix\": \"Drop `AlgPoints` until a downstream target uses it, or make it `private`; if kept, give it the `*_def`/coercion lemmas a thin wrapper needs.\",\n      \"evidence\": \"`def AlgPoints ... := A \u2192\u2090[k] k`; no other reference to `AlgPoints` in the diff.\"\n    },\n    {\n      \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\",\n      \"line\": \"44\",\n      \"issue\": \"`IsUnipotent`'s characteristic API is incomplete: only `isUnipotent_one` (introduction) is provided. There is no `isUnipotent_def`/`isUnipotent_iff` restatement, so consumers must unfold to `IsNilpotent ((g : A) - 1)`.\",\n      \"fix\": \"Add `isUnipotent_iff : IsUnipotent g \u2194 IsNilpotent ((g : A) - 1) := Iff.rfl` (or `_def`) so the predicate can be used without unfolding.\",\n      \"evidence\": \"`def IsUnipotent (g : GroupLike k A) : Prop := IsNilpotent ((g : A) - 1)` with only `isUnipotent_one` exposed.\"\n    },\n    {\n      \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\",\n      \"line\": \"78\",\n      \"issue\": \"`SemisimpleGroup.instReductiveGroup` duplicates the parent-projection instance that `class SemisimpleGroup extends ReductiveGroup` already generates (`SemisimpleGroup.toReductiveGroup`), adding a redundant instance to the surface.\",\n      \"fix\": \"Remove the explicit instance; the `extends` clause already provides the `SemisimpleGroup \u2192 ReductiveGroup` instance.\",\n      \"evidence\": \"`class SemisimpleGroup ... extends ReductiveGroup k A` plus the manual `instance ... := SemisimpleGroup.toReductiveGroup`.\"\n    }\n  ]\n}\n```",
+  "cost_usd": 0.24799,
+  "usage": {
+    "input_tokens": 1664,
+    "cache_creation_input_tokens": 11431,
+    "cache_read_input_tokens": 95483,
+    "output_tokens": 4669,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 11431
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 2810,
+        "cache_read_input_tokens": 28487,
+        "cache_creation_input_tokens": 263,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 263,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "session_id": "383347d1-d318-4943-a75a-c3dc57a83630",
+  "provider": "claude",
+  "model": "claude-opus-4-8",
+  "rubric": "api-design",
+  "verdict_obj": {
+    "verdict": "request_changes",
+    "summary": "The public class hierarchy exposes vacuous `True` fields, a content-free `True` lemma, and an unused `AlgPoints` definition with no API; the `IsUnipotent` characteristic API is also incomplete. The exposed interface either characterizes nothing or has no consumer.",
+    "findings": [
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "62",
+        "issue": "`ReductiveGroup.unipotent_radical_trivial : True` and `SemisimpleGroup.radical_trivial : True` are vacuous fields. The classes are therefore definitionally `AffineAlgGroup` plus no constraint, so `ReductiveGroup`/`SemisimpleGroup` claim a characterization they do not encode \u2014 a misleading public interface (every affine algebraic group is 'reductive').",
+        "fix": "Do not expose `ReductiveGroup`/`SemisimpleGroup` until the unipotent-radical predicate exists; or carry the real predicate as the field. Exposing `True`-fielded classes as the public hierarchy now ships a placeholder masquerading as the definition.",
+        "evidence": "`unipotent_radical_trivial : True`, `radical_trivial : True` in the diff."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "73",
+        "issue": "`ReductiveGroup.unipotentRadical_trivial'` is a public theorem of type `True`. It restates a `True` field and carries no content; it pollutes the API surface.",
+        "fix": "Remove the lemma. A consumer gains nothing from a `True`-valued restatement.",
+        "evidence": "`theorem ReductiveGroup.unipotentRadical_trivial' ... : True := h.unipotent_radical_trivial`."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "35",
+        "issue": "`AlgPoints` is exposed but has no consumer in this PR (`IsUnipotent` operates on `GroupLike k A`, not `AlgPoints`) and ships with zero characteristic API \u2014 no coercion, no `mem`/ext lemmas. It is orphan public surface.",
+        "fix": "Drop `AlgPoints` until a downstream target uses it, or make it `private`; if kept, give it the `*_def`/coercion lemmas a thin wrapper needs.",
+        "evidence": "`def AlgPoints ... := A \u2192\u2090[k] k`; no other reference to `AlgPoints` in the diff."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "44",
+        "issue": "`IsUnipotent`'s characteristic API is incomplete: only `isUnipotent_one` (introduction) is provided. There is no `isUnipotent_def`/`isUnipotent_iff` restatement, so consumers must unfold to `IsNilpotent ((g : A) - 1)`.",
+        "fix": "Add `isUnipotent_iff : IsUnipotent g \u2194 IsNilpotent ((g : A) - 1) := Iff.rfl` (or `_def`) so the predicate can be used without unfolding.",
+        "evidence": "`def IsUnipotent (g : GroupLike k A) : Prop := IsNilpotent ((g : A) - 1)` with only `isUnipotent_one` exposed."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "78",
+        "issue": "`SemisimpleGroup.instReductiveGroup` duplicates the parent-projection instance that `class SemisimpleGroup extends ReductiveGroup` already generates (`SemisimpleGroup.toReductiveGroup`), adding a redundant instance to the surface.",
+        "fix": "Remove the explicit instance; the `extends` clause already provides the `SemisimpleGroup \u2192 ReductiveGroup` instance.",
+        "evidence": "`class SemisimpleGroup ... extends ReductiveGroup k A` plus the manual `instance ... := SemisimpleGroup.toReductiveGroup`."
+      }
+    ]
+  }
+}

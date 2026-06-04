@@ -1,0 +1,45 @@
+{
+  "returncode": 0,
+  "raw_stderr": "",
+  "text": "No duplication found. `IsUnipotent`, `AffineAlgGroup`, `ReductiveGroup`, `SemisimpleGroup`, and `AlgPoints` have no existing counterparts in Mathlib or TauCeti. The PR reuses existing Mathlib API appropriately (`GroupLike`, `IsNilpotent`, `Algebra.FiniteType`, `Algebra.IsGeometricallyReduced`, `HopfAlgebra`).\n\nTAUCETI-VERDICT-9825a2e8b019d2c4d22f6b45\n\n{\"verdict\": \"approve\", \"summary\": \"No duplication: the new declarations (AffineAlgGroup, IsUnipotent, ReductiveGroup, SemisimpleGroup, AlgPoints) have no existing counterparts in Mathlib or TauCeti, and the PR reuses GroupLike, IsNilpotent, Algebra.FiniteType, and Algebra.IsGeometricallyReduced where appropriate.\", \"findings\": []}",
+  "cost_usd": 0.17147,
+  "usage": {
+    "input_tokens": 1664,
+    "cache_creation_input_tokens": 9825,
+    "cache_read_input_tokens": 92244,
+    "output_tokens": 2075,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 9825
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 582,
+        "cache_read_input_tokens": 26167,
+        "cache_creation_input_tokens": 977,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 977,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "session_id": "6a651f98-73ce-48d3-8e2f-0611e5ec6061",
+  "provider": "claude",
+  "model": "claude-opus-4-8",
+  "rubric": "reuse",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "No duplication: the new declarations (AffineAlgGroup, IsUnipotent, ReductiveGroup, SemisimpleGroup, AlgPoints) have no existing counterparts in Mathlib or TauCeti, and the PR reuses GroupLike, IsNilpotent, Algebra.FiniteType, and Algebra.IsGeometricallyReduced where appropriate.",
+    "findings": []
+  }
+}

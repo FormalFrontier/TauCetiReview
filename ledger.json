@@ -1,7 +1,7 @@
 {
   "days": {
     "2026-06-03": 1.41115,
-    "2026-06-04": 1.107824
+    "2026-06-04": 2.473681
   },
   "prs": {
     "26": {
@@ -570,6 +570,358 @@
         }
       },
       "scoreboard_comment_id": 4618269206
+    },
+    "40": {
+      "rounds": [
+        {
+          "round": 1,
+          "ts": "2026-06-04T02:11:23.640880+00:00",
+          "mode": "commit",
+          "ran": [
+            "scope",
+            "correctness",
+            "reuse",
+            "attribution",
+            "api-design",
+            "generality",
+            "placement",
+            "naming",
+            "documentation",
+            "proof-quality",
+            "deprecation"
+          ],
+          "states": {
+            "scope": "blocking_block",
+            "correctness": "blocking_block",
+            "reuse": "green",
+            "attribution": "green",
+            "api-design": "blocking_request",
+            "generality": "blocking_request",
+            "placement": "blocking_request",
+            "naming": "blocking_request",
+            "documentation": "blocking_request",
+            "proof-quality": "green",
+            "deprecation": "green"
+          },
+          "cost": 1.365857,
+          "head_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "rubrics_version": "dccacfb6e0bf58e2"
+        }
+      ],
+      "state": {
+        "scope": {
+          "rubric": "scope",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "block",
+          "confidence": null,
+          "summary": "The PR jumps to the Layer-6 endpoint (ReductiveGroup/SemisimpleGroup) and Layer-5 IsUnipotent with True/nilpotence placeholders, skipping the roadmap's prescribed Layer 0\u20135 dependency chain; there is no proximate path from these shells to the named target, and a real definition will replace rather than extend them. AffineAlgGroup/AlgPoints are plausible Layer-0 foundations, so the buildable material is bundled with premature endpoints.",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "55",
+              "issue": "ReductiveGroup/SemisimpleGroup are Layer-6 targets (roadmap README line 197) defined as `: True` shells before any of Layers 0\u20135 exist. Reductive = `R_u(G_k\u0304)` trivial presupposes the unipotent radical (Layer 5), Lie algebra (Layer 2), comodules (Layer 1), and base change to k\u0304 (Layer 0) \u2014 none present. No proximate path to the target.",
+              "fix": "Drop these classes until their prerequisites are built; deliver Layer 0 first (the Targets.lean Hopf\u2194scheme equivalences and the convolution group structure on AlgPoints).",
+              "evidence": "roadmap/TauCetiRoadmap/ReductiveGroups/README.md:197\u2013201 (Layer 6); Targets.lean:27\u201333 lists Layer 0 as the current targets."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "38",
+              "issue": "IsUnipotent is Layer 5 (README line 180) defined before Layer 1 comodule theory exists. The roadmap explicitly flags this nilpotence-in-A form as off the path: the correct definition requires comodules.",
+              "fix": "Defer IsUnipotent until Layer 1 (comodules) is in place.",
+              "evidence": "roadmap/.../README.md:187\u2013188: \"A na\u00efve IsUnipotent that tests nilpotence in the reduced ring A \u2026 the correct definition needs comodule theory (Layer 1).\""
+            },
+            {
+              "file": "",
+              "line": "0",
+              "issue": "Single-unit problem: the PR bundles plausibly-legitimate Layer-0 foundations (AffineAlgGroup, AlgPoints \u2014 AlgPoints is named at README line 98) with premature Layer-5/6 placeholder classes, so it is not one coherent on-roadmap unit.",
+              "fix": "Split: a Layer-0 foundations PR (built per roadmap, ideally addressing Targets.lean), and leave Layer 5/6 for follow-ups once prerequisites land.",
+              "evidence": "roadmap/.../README.md:98 (AlgPoints, Layer 0) vs lines 180/197 (IsUnipotent/Reductive, Layers 5/6)."
+            }
+          ],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": {
+            "comment_id": 3353011976,
+            "node_id": "PRRC_kwDOSup8rs7H2ucI",
+            "path": "TauCeti/AlgebraicGroup/Reductive.lean"
+          },
+          "author_replies": []
+        },
+        "correctness": {
+          "rubric": "correctness",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "block",
+          "confidence": null,
+          "summary": "The PR encodes the central reductive/semisimple conditions as placeholders and mis-types unipotence as a property of coordinate-ring group-like elements rather than group points. These are semantic faults in the new API, not missing downstream lemmas.",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 64,
+              "issue": "`ReductiveGroup.unipotent_radical_trivial : True` makes every `AffineAlgGroup` reductive by construction, so the stated defining condition has no mathematical content.",
+              "fix": "Do not add `ReductiveGroup` until the unipotent radical after base change is formalized, or replace this field with the actual triviality predicate for that radical.",
+              "evidence": "The diff declares `class ReductiveGroup : Prop extends AffineAlgGroup k A where ... unipotent_radical_trivial : True`, and `ReductiveGroup.unipotentRadical_trivial'` only returns that `True` field."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 69,
+              "issue": "`SemisimpleGroup.radical_trivial : True` likewise turns the radical condition into a placeholder, so semisimplicity is just reductivity plus a vacuous field.",
+              "fix": "Wait for or implement the actual radical/maximal connected solvable normal subgroup predicate and use its triviality as the field type.",
+              "evidence": "The diff declares `class SemisimpleGroup : Prop extends ReductiveGroup k A where ... radical_trivial : True`."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 48,
+              "issue": "`IsUnipotent (g : GroupLike k A)` does not match the docstring or mathematics of a unipotent group element: `GroupLike k A` is a group-like element of the Hopf coordinate ring, while the file\u2019s own `AlgPoints` definition represents `k`-points as `A \u2192\u2090[k] k`.",
+              "fix": "Define unipotence on group points, or defer it until a faithful linear representation/closed embedding into `GL_n` is available; do not test nilpotence of `(g : A) - 1` for a coordinate-ring element.",
+              "evidence": "Lines 40-41 define `AlgPoints k A := A \u2192\u2090[k] k`, but lines 47-49 state \u201cAn element `g \u2208 G(k)`\u201d while typing `g` as `GroupLike k A` and checking `IsNilpotent ((g : A) - 1)`."
+            }
+          ],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": {
+            "comment_id": 3353012065,
+            "node_id": "PRRC_kwDOSup8rs7H2udh",
+            "path": "TauCeti/AlgebraicGroup/Reductive.lean"
+          },
+          "author_replies": []
+        },
+        "reuse": {
+          "rubric": "reuse",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "No duplication: the new declarations (AffineAlgGroup, IsUnipotent, ReductiveGroup, SemisimpleGroup, AlgPoints) have no existing counterparts in Mathlib or TauCeti, and the PR reuses GroupLike, IsNilpotent, Algebra.FiniteType, and Algebra.IsGeometricallyReduced where appropriate.",
+          "findings": [],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "approved_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": null,
+          "author_replies": []
+        },
+        "attribution": {
+          "rubric": "attribution",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "The PR credits its central source (Kim Morrison's Mathlib draft #34897) in both the copyright header and the module docstring, with a link, and lists the relevant textbook references (Conrad, Borel). Attribution is complete for the work done.",
+          "findings": [],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "approved_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": null,
+          "author_replies": []
+        },
+        "api-design": {
+          "rubric": "api-design",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "request_changes",
+          "confidence": null,
+          "summary": "The public class hierarchy exposes vacuous `True` fields, a content-free `True` lemma, and an unused `AlgPoints` definition with no API; the `IsUnipotent` characteristic API is also incomplete. The exposed interface either characterizes nothing or has no consumer.",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "62",
+              "issue": "`ReductiveGroup.unipotent_radical_trivial : True` and `SemisimpleGroup.radical_trivial : True` are vacuous fields. The classes are therefore definitionally `AffineAlgGroup` plus no constraint, so `ReductiveGroup`/`SemisimpleGroup` claim a characterization they do not encode \u2014 a misleading public interface (every affine algebraic group is 'reductive').",
+              "fix": "Do not expose `ReductiveGroup`/`SemisimpleGroup` until the unipotent-radical predicate exists; or carry the real predicate as the field. Exposing `True`-fielded classes as the public hierarchy now ships a placeholder masquerading as the definition.",
+              "evidence": "`unipotent_radical_trivial : True`, `radical_trivial : True` in the diff."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "73",
+              "issue": "`ReductiveGroup.unipotentRadical_trivial'` is a public theorem of type `True`. It restates a `True` field and carries no content; it pollutes the API surface.",
+              "fix": "Remove the lemma. A consumer gains nothing from a `True`-valued restatement.",
+              "evidence": "`theorem ReductiveGroup.unipotentRadical_trivial' ... : True := h.unipotent_radical_trivial`."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "35",
+              "issue": "`AlgPoints` is exposed but has no consumer in this PR (`IsUnipotent` operates on `GroupLike k A`, not `AlgPoints`) and ships with zero characteristic API \u2014 no coercion, no `mem`/ext lemmas. It is orphan public surface.",
+              "fix": "Drop `AlgPoints` until a downstream target uses it, or make it `private`; if kept, give it the `*_def`/coercion lemmas a thin wrapper needs.",
+              "evidence": "`def AlgPoints ... := A \u2192\u2090[k] k`; no other reference to `AlgPoints` in the diff."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "44",
+              "issue": "`IsUnipotent`'s characteristic API is incomplete: only `isUnipotent_one` (introduction) is provided. There is no `isUnipotent_def`/`isUnipotent_iff` restatement, so consumers must unfold to `IsNilpotent ((g : A) - 1)`.",
+              "fix": "Add `isUnipotent_iff : IsUnipotent g \u2194 IsNilpotent ((g : A) - 1) := Iff.rfl` (or `_def`) so the predicate can be used without unfolding.",
+              "evidence": "`def IsUnipotent (g : GroupLike k A) : Prop := IsNilpotent ((g : A) - 1)` with only `isUnipotent_one` exposed."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "78",
+              "issue": "`SemisimpleGroup.instReductiveGroup` duplicates the parent-projection instance that `class SemisimpleGroup extends ReductiveGroup` already generates (`SemisimpleGroup.toReductiveGroup`), adding a redundant instance to the surface.",
+              "fix": "Remove the explicit instance; the `extends` clause already provides the `SemisimpleGroup \u2192 ReductiveGroup` instance.",
+              "evidence": "`class SemisimpleGroup ... extends ReductiveGroup k A` plus the manual `instance ... := SemisimpleGroup.toReductiveGroup`."
+            }
+          ],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": {
+            "comment_id": 3353012119,
+            "node_id": "PRRC_kwDOSup8rs7H2ueX",
+            "path": "TauCeti/AlgebraicGroup/Reductive.lean"
+          },
+          "author_replies": []
+        },
+        "generality": {
+          "rubric": "generality",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "request_changes",
+          "confidence": null,
+          "summary": "The new APIs are not at the natural Mathlib level: key definitions are either special cases where the general functor-of-points form is immediate, or vacuous subclasses that add no mathematical condition.",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 42,
+              "issue": "`AlgPoints` hard-codes only `k`-valued points, but the natural affine-group API is points over an arbitrary `k`-algebra `R`; base change to the algebraic closure is then just a specialization.",
+              "fix": "Define the general form first, e.g. `def AlgPoints (k A R) ... [Algebra k A] [Algebra k R] := A \u2192\u2090[k] R`, and make `k`-points an abbreviation/special case.",
+              "evidence": "The added signature is `def AlgPoints (k A : Type*) ... := A \u2192\u2090[k] k`, while the PR description explicitly needs base change to the algebraic closure."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 46,
+              "issue": "The unipotence section assumes `[IsAlgClosed k] [AffineAlgGroup k A]`, but `IsUnipotent` only uses nilpotence of `((g : A) - 1)`, and the following theorem has to `omit` those assumptions.",
+              "fix": "State the predicate at the assumptions it actually needs, or separate a general `GroupLike` nilpotence predicate from any later algebraic-group unipotence API.",
+              "evidence": "Lines 46-50 introduce `[IsAlgClosed k] [AffineAlgGroup k A]` before `def IsUnipotent (g : GroupLike k A) : Prop := IsNilpotent ((g : A) - 1)`; line 52 immediately omits those hypotheses for `isUnipotent_one`."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 62,
+              "issue": "`ReductiveGroup` and `SemisimpleGroup` are vacuous subclasses: their only new fields are `True`, so the classes do not encode reductivity or semisimplicity at any useful generality level.",
+              "fix": "Do not add these classes until the actual radical/unipotent-radical predicates exist, or make the fields state those predicates over the algebraic closure; then derive trivial special lemmas from that real statement.",
+              "evidence": "Lines 62-69 define `unipotent_radical_trivial : True` and `radical_trivial : True`, and line 72 merely re-exposes the `True` field."
+            }
+          ],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": {
+            "comment_id": 3353012162,
+            "node_id": "PRRC_kwDOSup8rs7H2ufC",
+            "path": "TauCeti/AlgebraicGroup/Reductive.lean"
+          },
+          "author_replies": []
+        },
+        "placement": {
+          "rubric": "placement",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "request_changes",
+          "confidence": null,
+          "summary": "The new declarations are in a plausible algebraic-group file, but one import is evidently broader than what the file uses.",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 9,
+              "issue": "`Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure` is imported even though the file only uses the `IsAlgClosed` class and never uses `AlgebraicClosure` or algebraic-closure constructions.",
+              "fix": "Replace it with the direct module that provides `IsAlgClosed`, or remove it if another existing import already provides the class transitively.",
+              "evidence": "Diff lines 9 and 44: the import is `Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure`, while the only related use is the hypothesis `[IsAlgClosed k]`."
+            }
+          ],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": {
+            "comment_id": 3353012227,
+            "node_id": "PRRC_kwDOSup8rs7H2ugD",
+            "path": "TauCeti/AlgebraicGroup/Reductive.lean"
+          },
+          "author_replies": []
+        },
+        "naming": {
+          "rubric": "naming",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "request_changes",
+          "confidence": null,
+          "summary": "The introduced API contains names that advertise substantive radical-triviality statements while their types are only `True`. These names would be misleading once downstream code depends on them.",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "61",
+              "issue": "`ReductiveGroup.unipotent_radical_trivial` is named as a real unipotent-radical triviality assertion, but its type is just `True`; `ReductiveGroup.unipotentRadical_trivial'` repeats the same misleading name for a theorem proving only `True`.",
+              "fix": "Remove the placeholder field/theorem until an actual unipotent radical predicate exists, or rename it explicitly as a placeholder rather than radical triviality.",
+              "evidence": "The diff declares `unipotent_radical_trivial : True` and later `theorem ReductiveGroup.unipotentRadical_trivial' ... : True := ...`."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": "66",
+              "issue": "`SemisimpleGroup.radical_trivial` claims radical triviality by name but has type `True`, so the name overstates the statement.",
+              "fix": "Remove this field until the radical is defined, or replace `True` with the actual radical-triviality statement before giving it this name.",
+              "evidence": "The diff declares `radical_trivial : True` under `SemisimpleGroup`."
+            }
+          ],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": {
+            "comment_id": 3353012299,
+            "node_id": "PRRC_kwDOSup8rs7H2uhL",
+            "path": "TauCeti/AlgebraicGroup/Reductive.lean"
+          },
+          "author_replies": []
+        },
+        "documentation": {
+          "rubric": "documentation",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "request_changes",
+          "confidence": null,
+          "summary": "Several docstrings overstate placeholder definitions or misidentify the objects being documented.",
+          "findings": [
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 48,
+              "issue": "`IsUnipotent` documents `g : GroupLike k A` as an element of `G(k)`, but the nearby `AlgPoints` definition says `G(k)`-points are `A \u2192\u2090[k] k`; this docstring misidentifies the API.",
+              "fix": "Either change the declaration to take actual algebraic points, or rewrite the docstring to describe the current `GroupLike k A` predicate without calling it a `G(k)` element.",
+              "evidence": "Diff lines 41-49 define `AlgPoints ... := A \u2192\u2090[k] k`, then document `g : GroupLike k A` as `g \u2208 G(k)`."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 61,
+              "issue": "`ReductiveGroup` claims to encode triviality of the unipotent radical after base change, but the only field is `unipotent_radical_trivial : True`, so the docstring promises mathematical content the class does not contain.",
+              "fix": "Document this honestly as a placeholder/stub, or replace `True` with the actual unipotent-radical condition before claiming reductivity.",
+              "evidence": "Diff lines 61-65: the class docstring describes the unipotent radical condition, while the field is exactly `True`."
+            },
+            {
+              "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+              "line": 67,
+              "issue": "`SemisimpleGroup` similarly claims radical triviality, but `radical_trivial : True` records no radical condition.",
+              "fix": "Mark the class and field documentation as placeholder documentation, or implement the actual radical-trivial condition.",
+              "evidence": "Diff lines 67-70: the class and field docstrings describe a radical, but the stored proposition is `True`."
+            }
+          ],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": {
+            "comment_id": 3353012356,
+            "node_id": "PRRC_kwDOSup8rs7H2uiE",
+            "path": "TauCeti/AlgebraicGroup/Reductive.lean"
+          },
+          "author_replies": []
+        },
+        "proof-quality": {
+          "rubric": "proof-quality",
+          "provider": "codex",
+          "model": "gpt-5.5",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "No proof-quality issues found in the added file. The only nontrivial proof is short, readable, and does not rely on undocumented `change`/`show` or obscure definitional equality.",
+          "findings": [],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "approved_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": null,
+          "author_replies": []
+        },
+        "deprecation": {
+          "rubric": "deprecation",
+          "provider": "claude",
+          "model": "claude-opus-4-8",
+          "verdict": "approve",
+          "confidence": null,
+          "summary": "Purely additive PR introducing a new file with new declarations; no existing public API is renamed, removed, or weakened, and there is no Mathlib bump. Nothing in the deprecation/backward-compatibility lane to flag.",
+          "findings": [],
+          "reviewed_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "approved_sha": "9cfaae886bccbffe9a74e55be28fb687e278e635",
+          "thread": null,
+          "author_replies": []
+        }
+      },
+      "scoreboard_comment_id": 4618352464
     }
   }
 }

@@ -1,0 +1,44 @@
+{
+  "returncode": 0,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "TAUCETI-VERDICT-86c588394672e4636d9ab656\n{\n  \"verdict\": \"request_changes\",\n  \"summary\": \"Several docstrings overstate placeholder definitions or misidentify the objects being documented.\",\n  \"findings\": [\n    {\n      \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\",\n      \"line\": 48,\n      \"issue\": \"`IsUnipotent` documents `g : GroupLike k A` as an element of `G(k)`, but the nearby `AlgPoints` definition says `G(k)`-points are `A \u2192\u2090[k] k`; this docstring misidentifies the API.\",\n      \"fix\": \"Either change the declaration to take actual algebraic points, or rewrite the docstring to describe the current `GroupLike k A` predicate without calling it a `G(k)` element.\",\n      \"evidence\": \"Diff lines 41-49 define `AlgPoints ... := A \u2192\u2090[k] k`, then document `g : GroupLike k A` as `g \u2208 G(k)`.\"\n    },\n    {\n      \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\",\n      \"line\": 61,\n      \"issue\": \"`ReductiveGroup` claims to encode triviality of the unipotent radical after base change, but the only field is `unipotent_radical_trivial : True`, so the docstring promises mathematical content the class does not contain.\",\n      \"fix\": \"Document this honestly as a placeholder/stub, or replace `True` with the actual unipotent-radical condition before claiming reductivity.\",\n      \"evidence\": \"Diff lines 61-65: the class docstring describes the unipotent radical condition, while the field is exactly `True`.\"\n    },\n    {\n      \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\",\n      \"line\": 67,\n      \"issue\": \"`SemisimpleGroup` similarly claims radical triviality, but `radical_trivial : True` records no radical condition.\",\n      \"fix\": \"Mark the class and field documentation as placeholder documentation, or implement the actual radical-trivial condition.\",\n      \"evidence\": \"Diff lines 67-70: the class and field docstrings describe a radical, but the stored proposition is `True`.\"\n    }\n  ]\n}",
+  "usage": {
+    "input_tokens": 29587,
+    "cached_input_tokens": 24832,
+    "output_tokens": 1738,
+    "reasoning_output_tokens": 1080
+  },
+  "session_id": "019e9065-542f-7371-914c-d716243ae8bf",
+  "cost_usd": 0.054364,
+  "cost_estimated": true,
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "documentation",
+  "verdict_obj": {
+    "verdict": "request_changes",
+    "summary": "Several docstrings overstate placeholder definitions or misidentify the objects being documented.",
+    "findings": [
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": 48,
+        "issue": "`IsUnipotent` documents `g : GroupLike k A` as an element of `G(k)`, but the nearby `AlgPoints` definition says `G(k)`-points are `A \u2192\u2090[k] k`; this docstring misidentifies the API.",
+        "fix": "Either change the declaration to take actual algebraic points, or rewrite the docstring to describe the current `GroupLike k A` predicate without calling it a `G(k)` element.",
+        "evidence": "Diff lines 41-49 define `AlgPoints ... := A \u2192\u2090[k] k`, then document `g : GroupLike k A` as `g \u2208 G(k)`."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": 61,
+        "issue": "`ReductiveGroup` claims to encode triviality of the unipotent radical after base change, but the only field is `unipotent_radical_trivial : True`, so the docstring promises mathematical content the class does not contain.",
+        "fix": "Document this honestly as a placeholder/stub, or replace `True` with the actual unipotent-radical condition before claiming reductivity.",
+        "evidence": "Diff lines 61-65: the class docstring describes the unipotent radical condition, while the field is exactly `True`."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": 67,
+        "issue": "`SemisimpleGroup` similarly claims radical triviality, but `radical_trivial : True` records no radical condition.",
+        "fix": "Mark the class and field documentation as placeholder documentation, or implement the actual radical-trivial condition.",
+        "evidence": "Diff lines 67-70: the class and field docstrings describe a radical, but the stored proposition is `True`."
+      }
+    ]
+  }
+}

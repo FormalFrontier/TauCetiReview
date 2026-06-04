@@ -1,0 +1,44 @@
+{
+  "returncode": 0,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "TAUCETI-VERDICT-7e94b600347a87a916ce39b7\n{\"verdict\":\"request_changes\",\"summary\":\"The new APIs are not at the natural Mathlib level: key definitions are either special cases where the general functor-of-points form is immediate, or vacuous subclasses that add no mathematical condition.\",\"findings\":[{\"file\":\"TauCeti/AlgebraicGroup/Reductive.lean\",\"line\":42,\"issue\":\"`AlgPoints` hard-codes only `k`-valued points, but the natural affine-group API is points over an arbitrary `k`-algebra `R`; base change to the algebraic closure is then just a specialization.\",\"fix\":\"Define the general form first, e.g. `def AlgPoints (k A R) ... [Algebra k A] [Algebra k R] := A \u2192\u2090[k] R`, and make `k`-points an abbreviation/special case.\",\"evidence\":\"The added signature is `def AlgPoints (k A : Type*) ... := A \u2192\u2090[k] k`, while the PR description explicitly needs base change to the algebraic closure.\"},{\"file\":\"TauCeti/AlgebraicGroup/Reductive.lean\",\"line\":46,\"issue\":\"The unipotence section assumes `[IsAlgClosed k] [AffineAlgGroup k A]`, but `IsUnipotent` only uses nilpotence of `((g : A) - 1)`, and the following theorem has to `omit` those assumptions.\",\"fix\":\"State the predicate at the assumptions it actually needs, or separate a general `GroupLike` nilpotence predicate from any later algebraic-group unipotence API.\",\"evidence\":\"Lines 46-50 introduce `[IsAlgClosed k] [AffineAlgGroup k A]` before `def IsUnipotent (g : GroupLike k A) : Prop := IsNilpotent ((g : A) - 1)`; line 52 immediately omits those hypotheses for `isUnipotent_one`.\"},{\"file\":\"TauCeti/AlgebraicGroup/Reductive.lean\",\"line\":62,\"issue\":\"`ReductiveGroup` and `SemisimpleGroup` are vacuous subclasses: their only new fields are `True`, so the classes do not encode reductivity or semisimplicity at any useful generality level.\",\"fix\":\"Do not add these classes until the actual radical/unipotent-radical predicates exist, or make the fields state those predicates over the algebraic closure; then derive trivial special lemmas from that real statement.\",\"evidence\":\"Lines 62-69 define `unipotent_radical_trivial : True` and `radical_trivial : True`, and line 72 merely re-exposes the `True` field.\"}]}",
+  "usage": {
+    "input_tokens": 45002,
+    "cached_input_tokens": 34944,
+    "output_tokens": 3776,
+    "reasoning_output_tokens": 2576
+  },
+  "session_id": "019e9063-512a-7483-84d5-fe7b7c73969b",
+  "cost_usd": 0.094012,
+  "cost_estimated": true,
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "generality",
+  "verdict_obj": {
+    "verdict": "request_changes",
+    "summary": "The new APIs are not at the natural Mathlib level: key definitions are either special cases where the general functor-of-points form is immediate, or vacuous subclasses that add no mathematical condition.",
+    "findings": [
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": 42,
+        "issue": "`AlgPoints` hard-codes only `k`-valued points, but the natural affine-group API is points over an arbitrary `k`-algebra `R`; base change to the algebraic closure is then just a specialization.",
+        "fix": "Define the general form first, e.g. `def AlgPoints (k A R) ... [Algebra k A] [Algebra k R] := A \u2192\u2090[k] R`, and make `k`-points an abbreviation/special case.",
+        "evidence": "The added signature is `def AlgPoints (k A : Type*) ... := A \u2192\u2090[k] k`, while the PR description explicitly needs base change to the algebraic closure."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": 46,
+        "issue": "The unipotence section assumes `[IsAlgClosed k] [AffineAlgGroup k A]`, but `IsUnipotent` only uses nilpotence of `((g : A) - 1)`, and the following theorem has to `omit` those assumptions.",
+        "fix": "State the predicate at the assumptions it actually needs, or separate a general `GroupLike` nilpotence predicate from any later algebraic-group unipotence API.",
+        "evidence": "Lines 46-50 introduce `[IsAlgClosed k] [AffineAlgGroup k A]` before `def IsUnipotent (g : GroupLike k A) : Prop := IsNilpotent ((g : A) - 1)`; line 52 immediately omits those hypotheses for `isUnipotent_one`."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": 62,
+        "issue": "`ReductiveGroup` and `SemisimpleGroup` are vacuous subclasses: their only new fields are `True`, so the classes do not encode reductivity or semisimplicity at any useful generality level.",
+        "fix": "Do not add these classes until the actual radical/unipotent-radical predicates exist, or make the fields state those predicates over the algebraic closure; then derive trivial special lemmas from that real statement.",
+        "evidence": "Lines 62-69 define `unipotent_radical_trivial : True` and `radical_trivial : True`, and line 72 merely re-exposes the `True` field."
+      }
+    ]
+  }
+}

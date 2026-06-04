@@ -1,0 +1,45 @@
+{
+  "returncode": 0,
+  "raw_stderr": "",
+  "text": "Attribution is satisfied. The source \u2014 Kim Morrison's Mathlib draft #34897 \u2014 is credited in both the copyright header (`Authors: Kim Morrison`) and the module docstring, with a direct link. The textbook references (Conrad, Borel) are listed. No uncredited laundering: the stated source is named where the work lives.\n\nTAUCETI-VERDICT-27a817fd26b4fdcb81d15a03\n\n```json\n{\n  \"verdict\": \"approve\",\n  \"summary\": \"The PR credits its central source (Kim Morrison's Mathlib draft #34897) in both the copyright header and the module docstring, with a link, and lists the relevant textbook references (Conrad, Borel). Attribution is complete for the work done.\",\n  \"findings\": []\n}\n```",
+  "cost_usd": 0.126743,
+  "usage": {
+    "input_tokens": 2446,
+    "cache_creation_input_tokens": 9775,
+    "cache_read_input_tokens": 40475,
+    "output_tokens": 1179,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 9775
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 788,
+        "output_tokens": 578,
+        "cache_read_input_tokens": 23156,
+        "cache_creation_input_tokens": 3938,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 3938,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "session_id": "fcc004a2-3e19-4cb9-8946-c967d1cd471e",
+  "provider": "claude",
+  "model": "claude-opus-4-8",
+  "rubric": "attribution",
+  "verdict_obj": {
+    "verdict": "approve",
+    "summary": "The PR credits its central source (Kim Morrison's Mathlib draft #34897) in both the copyright header and the module docstring, with a link, and lists the relevant textbook references (Conrad, Borel). Attribution is complete for the work done.",
+    "findings": []
+  }
+}

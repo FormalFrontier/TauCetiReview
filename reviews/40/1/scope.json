@@ -1,0 +1,67 @@
+{
+  "returncode": 0,
+  "raw_stderr": "",
+  "text": "I've read the ReductiveGroups roadmap and its `Targets.lean`. Assessing scope and single-topic.\n\nKey facts from the roadmap:\n- The build is explicitly **dependency-ordered**, Layer 0 \u2192 Layer 6. The currently-stated, ready targets in `Targets.lean` are the **Layer 0** Hopf\u2194affine-group-scheme equivalences (README lines 97\u2013123). `AlgPoints R A := A \u2192\u2090[k] R` is a named Layer 0 item (line 98).\n- `IsUnipotent` is **Layer 5** (README line 180\u2013188) and reductive/semisimple groups are **Layer 6** (line 197\u2013201). Reductive is defined as \"`R_u(G_k\u0304)` trivial,\" which presupposes the unipotent radical (Layer 5) \u2190 Lie algebra (Layer 2) \u2190 comodules (Layer 1) \u2190 functor of points / base change to k\u0304 (Layer 0).\n- The README flags this PR's exact `IsUnipotent` as a trap (line 187\u2013188): \"A na\u00efve `IsUnipotent` that tests nilpotence in the reduced ring `A` is *vacuous*\u2026 the correct definition needs comodule theory (Layer 1).\" (Vacuity itself is correctness's lane; the point here is that the *prerequisite* for a correct definition does not exist.)\n\nScope assessment: `ReductiveGroup`/`SemisimpleGroup` are the top-of-tower endpoint, but they're delivered as `\u2026 : True` placeholder shells before any of Layers 0\u20135 exist. There is no proximate path \u2014 the entire tower stands between this material and a real definition, and a future real `ReductiveGroup` will *replace* these shells, not build on them. `IsUnipotent` likewise jumps to Layer 5 before Layer 1. By contrast `AffineAlgGroup`/`AlgPoints` are plausibly-legitimate Layer-0 foundations, so the PR mixes buildable foundations with premature placeholder endpoints.\n\nTAUCETI-VERDICT-85067a7ee4bda073654d6000\n\n{\n  \"verdict\": \"block\",\n  \"summary\": \"The PR jumps to the Layer-6 endpoint (ReductiveGroup/SemisimpleGroup) and Layer-5 IsUnipotent with True/nilpotence placeholders, skipping the roadmap's prescribed Layer 0\u20135 dependency chain; there is no proximate path from these shells to the named target, and a real definition will replace rather than extend them. AffineAlgGroup/AlgPoints are plausible Layer-0 foundations, so the buildable material is bundled with premature endpoints.\",\n  \"findings\": [\n    { \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\", \"line\": \"55\", \"issue\": \"ReductiveGroup/SemisimpleGroup are Layer-6 targets (roadmap README line 197) defined as `: True` shells before any of Layers 0\u20135 exist. Reductive = `R_u(G_k\u0304)` trivial presupposes the unipotent radical (Layer 5), Lie algebra (Layer 2), comodules (Layer 1), and base change to k\u0304 (Layer 0) \u2014 none present. No proximate path to the target.\", \"fix\": \"Drop these classes until their prerequisites are built; deliver Layer 0 first (the Targets.lean Hopf\u2194scheme equivalences and the convolution group structure on AlgPoints).\", \"evidence\": \"roadmap/TauCetiRoadmap/ReductiveGroups/README.md:197\u2013201 (Layer 6); Targets.lean:27\u201333 lists Layer 0 as the current targets.\" },\n    { \"file\": \"TauCeti/AlgebraicGroup/Reductive.lean\", \"line\": \"38\", \"issue\": \"IsUnipotent is Layer 5 (README line 180) defined before Layer 1 comodule theory exists. The roadmap explicitly flags this nilpotence-in-A form as off the path: the correct definition requires comodules.\", \"fix\": \"Defer IsUnipotent until Layer 1 (comodules) is in place.\", \"evidence\": \"roadmap/.../README.md:187\u2013188: \\\"A na\u00efve IsUnipotent that tests nilpotence in the reduced ring A \u2026 the correct definition needs comodule theory (Layer 1).\\\"\" },\n    { \"file\": \"\", \"line\": \"0\", \"issue\": \"Single-unit problem: the PR bundles plausibly-legitimate Layer-0 foundations (AffineAlgGroup, AlgPoints \u2014 AlgPoints is named at README line 98) with premature Layer-5/6 placeholder classes, so it is not one coherent on-roadmap unit.\", \"fix\": \"Split: a Layer-0 foundations PR (built per roadmap, ideally addressing Targets.lean), and leave Layer 5/6 for follow-ups once prerequisites land.\", \"evidence\": \"roadmap/.../README.md:98 (AlgPoints, Layer 0) vs lines 180/197 (IsUnipotent/Reductive, Layers 5/6).\" }\n  ]\n}",
+  "cost_usd": 0.334631,
+  "usage": {
+    "input_tokens": 1662,
+    "cache_creation_input_tokens": 17387,
+    "cache_read_input_tokens": 66230,
+    "output_tokens": 7228,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 17387
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 6847,
+        "cache_read_input_tokens": 25547,
+        "cache_creation_input_tokens": 9159,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 9159,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "session_id": "cbe4353b-2180-4c56-8559-ce45504d4c81",
+  "provider": "claude",
+  "model": "claude-opus-4-8",
+  "rubric": "scope",
+  "verdict_obj": {
+    "verdict": "block",
+    "summary": "The PR jumps to the Layer-6 endpoint (ReductiveGroup/SemisimpleGroup) and Layer-5 IsUnipotent with True/nilpotence placeholders, skipping the roadmap's prescribed Layer 0\u20135 dependency chain; there is no proximate path from these shells to the named target, and a real definition will replace rather than extend them. AffineAlgGroup/AlgPoints are plausible Layer-0 foundations, so the buildable material is bundled with premature endpoints.",
+    "findings": [
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "55",
+        "issue": "ReductiveGroup/SemisimpleGroup are Layer-6 targets (roadmap README line 197) defined as `: True` shells before any of Layers 0\u20135 exist. Reductive = `R_u(G_k\u0304)` trivial presupposes the unipotent radical (Layer 5), Lie algebra (Layer 2), comodules (Layer 1), and base change to k\u0304 (Layer 0) \u2014 none present. No proximate path to the target.",
+        "fix": "Drop these classes until their prerequisites are built; deliver Layer 0 first (the Targets.lean Hopf\u2194scheme equivalences and the convolution group structure on AlgPoints).",
+        "evidence": "roadmap/TauCetiRoadmap/ReductiveGroups/README.md:197\u2013201 (Layer 6); Targets.lean:27\u201333 lists Layer 0 as the current targets."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "38",
+        "issue": "IsUnipotent is Layer 5 (README line 180) defined before Layer 1 comodule theory exists. The roadmap explicitly flags this nilpotence-in-A form as off the path: the correct definition requires comodules.",
+        "fix": "Defer IsUnipotent until Layer 1 (comodules) is in place.",
+        "evidence": "roadmap/.../README.md:187\u2013188: \"A na\u00efve IsUnipotent that tests nilpotence in the reduced ring A \u2026 the correct definition needs comodule theory (Layer 1).\""
+      },
+      {
+        "file": "",
+        "line": "0",
+        "issue": "Single-unit problem: the PR bundles plausibly-legitimate Layer-0 foundations (AffineAlgGroup, AlgPoints \u2014 AlgPoints is named at README line 98) with premature Layer-5/6 placeholder classes, so it is not one coherent on-roadmap unit.",
+        "fix": "Split: a Layer-0 foundations PR (built per roadmap, ideally addressing Targets.lean), and leave Layer 5/6 for follow-ups once prerequisites land.",
+        "evidence": "roadmap/.../README.md:98 (AlgPoints, Layer 0) vs lines 180/197 (IsUnipotent/Reductive, Layers 5/6)."
+      }
+    ]
+  }
+}

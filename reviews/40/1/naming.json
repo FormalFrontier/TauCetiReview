@@ -1,0 +1,37 @@
+{
+  "returncode": 0,
+  "raw_stderr": "Reading additional input from stdin...\n",
+  "text": "TAUCETI-VERDICT-d4f0985ee2978768090bf074\n{\"verdict\":\"request_changes\",\"summary\":\"The introduced API contains names that advertise substantive radical-triviality statements while their types are only `True`. These names would be misleading once downstream code depends on them.\",\"findings\":[{\"file\":\"TauCeti/AlgebraicGroup/Reductive.lean\",\"line\":\"61\",\"issue\":\"`ReductiveGroup.unipotent_radical_trivial` is named as a real unipotent-radical triviality assertion, but its type is just `True`; `ReductiveGroup.unipotentRadical_trivial'` repeats the same misleading name for a theorem proving only `True`.\",\"fix\":\"Remove the placeholder field/theorem until an actual unipotent radical predicate exists, or rename it explicitly as a placeholder rather than radical triviality.\",\"evidence\":\"The diff declares `unipotent_radical_trivial : True` and later `theorem ReductiveGroup.unipotentRadical_trivial' ... : True := ...`.\"},{\"file\":\"TauCeti/AlgebraicGroup/Reductive.lean\",\"line\":\"66\",\"issue\":\"`SemisimpleGroup.radical_trivial` claims radical triviality by name but has type `True`, so the name overstates the statement.\",\"fix\":\"Remove this field until the radical is defined, or replace `True` with the actual radical-triviality statement before giving it this name.\",\"evidence\":\"The diff declares `radical_trivial : True` under `SemisimpleGroup`.\"}]}",
+  "usage": {
+    "input_tokens": 29518,
+    "cached_input_tokens": 24832,
+    "output_tokens": 1722,
+    "reasoning_output_tokens": 1041
+  },
+  "session_id": "019e9064-c7da-7dc0-a822-a600442151ff",
+  "cost_usd": 0.054117,
+  "cost_estimated": true,
+  "provider": "codex",
+  "model": "gpt-5.5",
+  "rubric": "naming",
+  "verdict_obj": {
+    "verdict": "request_changes",
+    "summary": "The introduced API contains names that advertise substantive radical-triviality statements while their types are only `True`. These names would be misleading once downstream code depends on them.",
+    "findings": [
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "61",
+        "issue": "`ReductiveGroup.unipotent_radical_trivial` is named as a real unipotent-radical triviality assertion, but its type is just `True`; `ReductiveGroup.unipotentRadical_trivial'` repeats the same misleading name for a theorem proving only `True`.",
+        "fix": "Remove the placeholder field/theorem until an actual unipotent radical predicate exists, or rename it explicitly as a placeholder rather than radical triviality.",
+        "evidence": "The diff declares `unipotent_radical_trivial : True` and later `theorem ReductiveGroup.unipotentRadical_trivial' ... : True := ...`."
+      },
+      {
+        "file": "TauCeti/AlgebraicGroup/Reductive.lean",
+        "line": "66",
+        "issue": "`SemisimpleGroup.radical_trivial` claims radical triviality by name but has type `True`, so the name overstates the statement.",
+        "fix": "Remove this field until the radical is defined, or replace `True` with the actual radical-triviality statement before giving it this name.",
+        "evidence": "The diff declares `radical_trivial : True` under `SemisimpleGroup`."
+      }
+    ]
+  }
+}
