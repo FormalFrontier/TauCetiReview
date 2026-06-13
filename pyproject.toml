@@ -10,6 +10,7 @@ dependencies = []
 
 [project.scripts]
 tauceti-review = "runner.cli:main"
+tauceti-review-costs = "runner.costs:main"
 
 [build-system]
 requires = ["setuptools>=68"]
