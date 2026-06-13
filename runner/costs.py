@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """costs.py — attribute Tau Ceti AI-review spend (tokens AND $) to PRs and merged LOC.
 
-Two data sources, picked automatically:
+Three data sources, picked automatically:
 
-  * **store** (preferred) — the review engine's cache,
-    ``~/.cache/tauceti-review/store/<repo>/`` — holds a per-rubric record
-    ``reviews/<pr>/<round>/<rubric>.json`` with a real ``usage`` block
-    (input / cached / output / reasoning tokens) *and* ``cost_usd``, plus
-    ``ledger.json`` for per-round timestamps. This is authoritative and is the
-    only source with **token** counts.
-  * **logs** (fallback) — ``logs/task-*.log`` round headers + the
-    ``ROUND n (commit) ... cost $X`` line. Dollars only, no tokens. Used when
-    the store cache is absent (e.g. on another machine).
+  * **data** (canonical) — a TauCetiData checkout, the durable/public/append-only
+    archive: ``records/runs/<pr>/<run_id>.json`` with a full ``usage`` block,
+    ``started_at``, ``model`` and ``cost_usd``. Reproducible by anyone; defaults to
+    the production arm and de-dupes by ``dedupe_key``. ``--source data --data-dir``.
+  * **store** — the engine's local cache, ``~/.cache/tauceti-review/store/<repo>/``
+    (``reviews/<pr>/<round>/<rubric>.json`` + ``ledger.json``). Fast and local but
+    ephemeral and single-machine.
+  * **logs** (fallback) — ``task-*.log`` ``ROUND n ... cost $X`` lines. Dollars
+    only, no tokens.
 
-`--source auto` (default) uses the store when present, else the logs. The two
-are never mixed, so nothing is double-counted.
+`--source auto` (default) prefers ``data`` when ``--data-dir`` is given, else the
+store, else logs. Sources are never mixed, so nothing is double-counted.
 
 It joins each round to its PR's outcome and size (via ``gh``), stores everything
 in SQLite, and reports/plots, separately:
@@ -61,7 +61,7 @@ CACHE = Path.home() / ".cache" / "tauceti-review"
 DEFAULT_DB = CACHE / "review-costs.db"
 DEFAULT_OUT = CACHE / "review-costs.svg"
 DEFAULT_REPO = "FormalFrontier/TauCeti"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # Cost is DERIVED, not a stored fact. We recompute every *estimated* (codex/pi) review from the
 # token counts — the only immutable fact — applying the cache-aware formula. Crucially we price
@@ -173,14 +173,14 @@ def connect(db_path: Path) -> sqlite3.Connection:
             est_frac            REAL
         );
         CREATE TABLE IF NOT EXISTS rubric_runs (
+            run_key TEXT PRIMARY KEY,  -- store: 'pr:round:rubric'; data: the run's dedupe_key
             pr INTEGER, round_no INTEGER, rubric TEXT, provider TEXT, model TEXT,
             input_tokens INTEGER, cached_input_tokens INTEGER, output_tokens INTEGER,
             reasoning_tokens INTEGER,
             cost_usd REAL,        -- faithful: priced as of the run's own date (the headline metric)
             cost_today REAL,      -- forecast: the same tokens valued at today's prices.json
             cost_recorded REAL,   -- what the engine wrote at review time (stale rates / old formula)
-            cost_estimated INTEGER, verdict TEXT, ts TEXT,
-            PRIMARY KEY (pr, round_no, rubric)
+            cost_estimated INTEGER, verdict TEXT, ts TEXT
         );
         CREATE TABLE IF NOT EXISTS prs (
             pr INTEGER PRIMARY KEY, state TEXT, additions INTEGER, deletions INTEGER,
@@ -194,11 +194,66 @@ def connect(db_path: Path) -> sqlite3.Connection:
     return con
 
 
-# --------------------------------------------------------------- ingest: store
+# --------------------------------------------------------- ingest: store / data
 def _norm_ts(ts: str | None) -> str:
     if not ts:
         return "1970-01-01 00:00:00"
     return ts.replace("T", " ")[:19]
+
+
+def _usage_tokens(u: dict) -> tuple[int, int, int, int]:
+    return (u.get("input_tokens", 0) or 0,
+            u.get("cached_input_tokens", 0) or u.get("cache_read_input_tokens", 0) or 0,
+            u.get("output_tokens", 0) or 0,
+            u.get("reasoning_output_tokens", 0) or 0)
+
+
+def _add_run(con, agg, history, today, unpriced, *, run_key, pr, rd, rubric, provider, model,
+             it, ct, ot, rt, recorded, est, verdict, ts):
+    """Derive the three cost lenses for one rubric run, persist it, and fold into the round agg.
+    Estimated (codex/pi) costs are recomputed from tokens — faithfully at the run's own date, and
+    at today's prices for the forecast; real provider-billed costs are kept as recorded."""
+    if est:
+        win = price_window(history, model, ts[:10])
+        now = price_window(history, model, today)
+        if win is None:
+            win = now = {**DEFAULT_PRICE}
+            unpriced[model] = unpriced.get(model, 0) + 1
+        cost = cost_from_window(win, it, ct, ot)
+        cost_today = cost_from_window(now, it, ct, ot)
+    else:
+        cost = cost_today = recorded
+    con.execute(
+        "INSERT OR REPLACE INTO rubric_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (run_key, pr, rd, rubric, provider, model, it, ct, ot, rt,
+         cost, cost_today, recorded, est, verdict, ts))
+    a = agg.setdefault((pr, rd), dict(it=0, ct=0, ot=0, rt=0, cost=0.0, est=0, n=0, req=0, ts=ts))
+    a["it"] += it; a["ct"] += ct; a["ot"] += ot; a["rt"] += rt
+    a["cost"] += cost; a["est"] += est; a["n"] += 1
+    if verdict == "request_changes":
+        a["req"] += 1
+    a["ts"] = min(a["ts"], ts) if a["ts"] else ts
+
+
+def _flush_rounds(con, agg, source):
+    for (pr, rd), a in agg.items():
+        con.execute(
+            "INSERT OR REPLACE INTO review_rounds "
+            "(key,source,pr,round_no,ts,day,verdict,rubrics_run,"
+            " input_tokens,cached_input_tokens,output_tokens,reasoning_tokens,cost,est_frac) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (f"{source}:{pr}:{rd}", source, pr, rd, a["ts"], a["ts"][:10],
+             "changes requested" if a["req"] else "approved",
+             a["n"], a["it"], a["ct"], a["ot"], a["rt"], a["cost"],
+             a["est"] / a["n"] if a["n"] else None))
+
+
+def _warn_unpriced(unpriced):
+    if unpriced:
+        miss = ", ".join(f"{m or '?'}×{n}" for m, n in sorted(unpriced.items()))
+        print(f"  warning: {sum(unpriced.values())} rubric run(s) used a model absent from "
+              f"prices-history.json (fell back to {DEFAULT_PRICE['input']}/{DEFAULT_PRICE['output']}"
+              f"): {miss}", file=sys.stderr)
 
 
 def ingest_store(con: sqlite3.Connection, store: Path) -> tuple[int, int]:
@@ -215,15 +270,13 @@ def ingest_store(con: sqlite3.Connection, store: Path) -> tuple[int, int]:
     con.execute("DELETE FROM rubric_runs")
     con.execute("DELETE FROM review_rounds WHERE source='store'")
     history = load_history()
-    current = load_prices()
-    _warn_history_drift(history, current)
+    _warn_history_drift(history, load_prices())
     today = datetime.now().strftime("%Y-%m-%d")
     unpriced: dict[str, int] = {}
     agg: dict[tuple[int, int], dict] = {}
     nrub = 0
     for f in sorted(reviews.glob("*/*/*.json")):
-        rubric = f.stem
-        if rubric == "scoreboard":
+        if f.stem == "scoreboard":
             continue
         try:
             d = json.loads(f.read_text())
@@ -232,64 +285,80 @@ def ingest_store(con: sqlite3.Connection, store: Path) -> tuple[int, int]:
         if not isinstance(d, dict) or ("usage" not in d and "cost_usd" not in d):
             continue
         try:
-            pr = int(f.parent.parent.name)
-            rd = int(f.parent.name)
+            pr, rd = int(f.parent.parent.name), int(f.parent.name)
         except ValueError:
             continue
-        u = d.get("usage") or {}
-        it = u.get("input_tokens", 0) or 0
-        ct = u.get("cached_input_tokens", 0) or u.get("cache_read_input_tokens", 0) or 0
-        ot = u.get("output_tokens", 0) or 0
-        rt = u.get("reasoning_output_tokens", 0) or 0
-        recorded = d.get("cost_usd", 0) or 0
-        est = 1 if d.get("cost_estimated") else 0
-        model = d.get("model")
-        verdict = (d.get("verdict_obj") or {}).get("verdict") or d.get("verdict")
+        it, ct, ot, rt = _usage_tokens(d.get("usage") or {})
         raw_ts = ts_map.get((pr, rd))
         ts = (_norm_ts(raw_ts) if raw_ts
               else datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"))
-        # Estimated (codex/pi) costs are derived from tokens: faithfully at the run's own date,
-        # plus a forecast at today's prices. Real provider-billed costs are kept as recorded.
-        if est:
-            win = price_window(history, model, ts[:10])
-            now = price_window(history, model, today)
-            if win is None:
-                win = now = {**DEFAULT_PRICE}
-                unpriced[model] = unpriced.get(model, 0) + 1
-            cost = cost_from_window(win, it, ct, ot)
-            cost_today = cost_from_window(now, it, ct, ot)
-        else:
-            cost = cost_today = recorded
-        con.execute(
-            "INSERT OR REPLACE INTO rubric_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (pr, rd, rubric, d.get("provider"), model, it, ct, ot, rt,
-             cost, cost_today, recorded, est, verdict, ts),
-        )
+        _add_run(con, agg, history, today, unpriced, run_key=f"{pr}:{rd}:{f.stem}",
+                 pr=pr, rd=rd, rubric=f.stem,
+                 provider=d.get("provider"), model=d.get("model"), it=it, ct=ct, ot=ot, rt=rt,
+                 recorded=d.get("cost_usd", 0) or 0, est=1 if d.get("cost_estimated") else 0,
+                 verdict=(d.get("verdict_obj") or {}).get("verdict") or d.get("verdict"), ts=ts)
         nrub += 1
-        a = agg.setdefault((pr, rd), dict(it=0, ct=0, ot=0, rt=0, cost=0.0, est=0,
-                                          n=0, req=0, ts=ts))
-        a["it"] += it; a["ct"] += ct; a["ot"] += ot; a["rt"] += rt
-        a["cost"] += cost; a["est"] += est; a["n"] += 1
-        if verdict == "request_changes":
-            a["req"] += 1
-        a["ts"] = min(a["ts"], ts) if a["ts"] else ts
-    for (pr, rd), a in agg.items():
-        verdict = "changes requested" if a["req"] else "approved"
-        con.execute(
-            "INSERT OR REPLACE INTO review_rounds "
-            "(key,source,pr,round_no,ts,day,verdict,rubrics_run,"
-            " input_tokens,cached_input_tokens,output_tokens,reasoning_tokens,"
-            " cost,est_frac) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (f"store:{pr}:{rd}", "store", pr, rd, a["ts"], a["ts"][:10], verdict,
-             a["n"], a["it"], a["ct"], a["ot"], a["rt"], a["cost"],
-             a["est"] / a["n"] if a["n"] else None),
-        )
+    _flush_rounds(con, agg, "store")
     con.commit()
-    if unpriced:
-        miss = ", ".join(f"{m or '?'}×{n}" for m, n in sorted(unpriced.items()))
-        print(f"  warning: {sum(unpriced.values())} rubric run(s) used a model absent from "
-              f"prices-history.json (fell back to {DEFAULT_PRICE['input']}/{DEFAULT_PRICE['output']}"
-              f"): {miss}", file=sys.stderr)
+    _warn_unpriced(unpriced)
+    return len(agg), nrub
+
+
+def ingest_data(con: sqlite3.Connection, data_dir: Path, include_shadows: bool = False) -> tuple[int, int]:
+    """Read the durable public archive (a TauCetiData checkout): records/runs/<pr>/<run_id>.json.
+    This is the reproducible source — anyone can clone TauCetiData and get the same numbers,
+    independent of a local cache. Defaults to the production arm (the reviews that gated PRs);
+    pass include_shadows to also count the archived A/B experiment arms."""
+    runs = data_dir / "records" / "runs"
+    if not runs.is_dir():
+        raise FileNotFoundError(f"no records/runs under {data_dir} (clone FormalFrontier/TauCetiData)")
+    con.execute("DELETE FROM rubric_runs")
+    con.execute("DELETE FROM review_rounds WHERE source='data'")
+    history = load_history()
+    _warn_history_drift(history, load_prices())
+    today = datetime.now().strftime("%Y-%m-%d")
+    unpriced: dict[str, int] = {}
+    agg: dict[tuple[int, int], dict] = {}
+    seen: set[str] = set()
+    nrub = skipped_shadow = skipped_dup = 0
+    for f in sorted(runs.glob("*/*.json")):
+        try:
+            d = json.loads(f.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(d, dict) or "usage" not in d:
+            continue
+        if not include_shadows and (d.get("arm") or "production") != "production":
+            skipped_shadow += 1
+            continue
+        # dedupe_key identifies one logical run; the same run can be archived from several
+        # backfill sources, so collapse to one record (and it is the rubric_runs key, since
+        # (pr,round,rubric) collapses genuinely distinct runs at different commits/models).
+        run_key = d.get("dedupe_key") or d.get("run_id") or f.stem
+        if run_key in seen:
+            skipped_dup += 1
+            continue
+        seen.add(run_key)
+        try:
+            pr, rd = int(d["pr"]), int(d.get("round") or 0)
+        except (KeyError, ValueError, TypeError):
+            continue
+        it, ct, ot, rt = _usage_tokens(d.get("usage") or {})
+        _add_run(con, agg, history, today, unpriced, run_key=run_key, pr=pr, rd=rd,
+                 rubric=d.get("rubric"), provider=d.get("provider"), model=d.get("model"),
+                 it=it, ct=ct, ot=ot, rt=rt, recorded=d.get("cost_usd", 0) or 0,
+                 est=1 if d.get("cost_estimated") else 0,
+                 verdict=d.get("verdict"), ts=_norm_ts(d.get("started_at")))
+        nrub += 1
+    _flush_rounds(con, agg, "data")
+    con.commit()
+    _warn_unpriced(unpriced)
+    if skipped_shadow:
+        print(f"  ({skipped_shadow} shadow-arm runs excluded; --include-shadows to count them)",
+              file=sys.stderr)
+    if skipped_dup:
+        print(f"  ({skipped_dup} duplicate run records collapsed by dedupe_key)", file=sys.stderr)
+    return len(agg), nrub
     return len(agg), nrub
 
 
@@ -349,11 +418,19 @@ def ingest_logs(con: sqlite3.Connection, logs_dir: Path, reingest: bool = False)
     return added, skipped
 
 
-def ingest(con, source, store, logs_dir, reingest=False) -> str:
+def ingest(con, source, store, logs_dir, data_dir=None, include_shadows=False, reingest=False) -> str:
+    have_data = data_dir is not None and (data_dir / "records" / "runs").is_dir()
     have_store = (store / "reviews").is_dir()
     chosen = source
     if source == "auto":
-        chosen = "store" if have_store else "logs"
+        # Prefer the durable archive when a checkout is given (reproducible); else the local
+        # cache; else the worker logs.
+        chosen = "data" if have_data else "store" if have_store else "logs"
+    if chosen == "data":
+        if data_dir is None:
+            raise SystemExit("data source needs --data-dir (a TauCetiData checkout)")
+        rounds, rubrics = ingest_data(con, data_dir, include_shadows)
+        return f"data: {rounds} rounds / {rubrics} rubric runs from TauCetiData (tokens + $)"
     if chosen == "store":
         rounds, rubrics = ingest_store(con, store)
         return f"store: {rounds} rounds / {rubrics} rubric runs (tokens + $)"
@@ -759,7 +836,11 @@ def main(argv=None):
     p.add_argument("--repo", default=DEFAULT_REPO)
     p.add_argument("--store", type=Path, default=None,
                    help="review-engine store dir (default ~/.cache/tauceti-review/store/<repo>)")
-    p.add_argument("--source", choices=["auto", "store", "logs"], default="auto")
+    p.add_argument("--data-dir", type=Path, default=None,
+                   help="TauCetiData checkout — the durable, public, reproducible source")
+    p.add_argument("--source", choices=["auto", "data", "store", "logs"], default="auto")
+    p.add_argument("--include-shadows", action="store_true",
+                   help="(data source) also count archived A/B shadow-arm runs")
     sub = p.add_subparsers(dest="cmd", required=True)
     ig = sub.add_parser("ingest"); ig.add_argument("--reingest", action="store_true")
     pp = sub.add_parser("prs"); pp.add_argument("--refresh-all", action="store_true")
@@ -777,7 +858,8 @@ def main(argv=None):
     con = connect(a.db)
 
     if a.cmd == "ingest":
-        print(ingest(con, a.source, store, a.logs_dir, getattr(a, "reingest", False)))
+        print(ingest(con, a.source, store, a.logs_dir, a.data_dir, a.include_shadows,
+                     getattr(a, "reingest", False)))
     elif a.cmd == "prs":
         print(f"refreshed {refresh_prs(con, a.repo, a.refresh_all)} PRs")
     elif a.cmd == "report":
@@ -785,7 +867,7 @@ def main(argv=None):
     elif a.cmd == "graph":
         graph(con, a.out)
     elif a.cmd == "all":
-        print(ingest(con, a.source, store, a.logs_dir))
+        print(ingest(con, a.source, store, a.logs_dir, a.data_dir, a.include_shadows))
         print(f"refreshed {refresh_prs(con, a.repo)} PRs")
         report(con, a.window)
         if a.graph:

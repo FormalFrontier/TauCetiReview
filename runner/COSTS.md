@@ -16,14 +16,31 @@ It answers:
 
 | source | tokens | $ | when |
 |--------|:------:|:-:|------|
-| **store** `~/.cache/tauceti-review/store/<repo>/` | ✅ | ✅ | default — the live engine cache |
-| **logs** `task-*.log` | ❌ | ✅ | fallback for a worker's logs, dollars only (`--source logs --logs-dir …`) |
+| **data** a [TauCetiData](https://github.com/FormalFrontier/TauCetiData) checkout | ✅ | ✅ | **canonical** — durable, public, reproducible (`--source data --data-dir …`) |
+| **store** `~/.cache/tauceti-review/store/<repo>/` | ✅ | ✅ | the live engine cache — fast, local, single-machine |
+| **logs** `task-*.log` | ❌ | ✅ | last-resort fallback, dollars only (`--source logs --logs-dir …`) |
 
-The store is authoritative: each `reviews/<pr>/<round>/<rubric>.json` carries a
-real `usage` block (`input_tokens`, `cached_input_tokens`, `output_tokens`,
-`reasoning_output_tokens`) and `cost_usd`; `ledger.json` supplies per-round
-timestamps. `--source auto` (default) uses the store if present, else the logs —
-never both, so nothing is double-counted.
+The **data** source is the one to prefer: TauCetiData is the durable, public,
+append-only system of record, so anyone can clone it and reproduce the same
+numbers without access to a local cache. Each `records/runs/<pr>/<run_id>.json`
+carries the full `usage` block, `started_at`, `model`, and the engine's
+`cost_usd`. It defaults to the **production** arm (the reviews that actually
+gated PRs); pass `--include-shadows` to also count the archived A/B experiment
+arms (`shadow:*`). The same logical run can be archived from several backfill
+sources, so runs are de-duplicated by their `dedupe_key` (which, unlike
+`(pr,round,rubric)`, also distinguishes genuinely separate runs at different
+commits/models).
+
+The **store** is the live engine cache — convenient on the machine that ran the
+reviews, but ephemeral and single-machine; use it for a quick local look. The
+**logs** path only ever had dollar figures, no tokens. `--source auto` (default)
+prefers `data` when `--data-dir` is given, else the store, else logs — never
+mixing, so nothing is double-counted.
+
+```bash
+git clone --depth 1 https://github.com/FormalFrontier/TauCetiData /tmp/TauCetiData
+tauceti-review-costs --source data --data-dir /tmp/TauCetiData all
+```
 
 ### Pricing — cost is derived from tokens, priced as of each run's date
 
@@ -91,7 +108,7 @@ commits land under the contributor's account.
 
 ## Schema (for ad-hoc SQL)
 
-- `rubric_runs(pr, round_no, rubric, provider, model, input_tokens, cached_input_tokens, output_tokens, reasoning_tokens, cost_usd, cost_today, cost_recorded, cost_estimated, verdict, ts)` — finest grain (store only); `cost_usd` = faithful (priced as of `ts`'s date), `cost_today` = forecast (today's prices), `cost_recorded` = engine's original
+- `rubric_runs(run_key, pr, round_no, rubric, provider, model, input_tokens, cached_input_tokens, output_tokens, reasoning_tokens, cost_usd, cost_today, cost_recorded, cost_estimated, verdict, ts)` — finest grain; `run_key` is `pr:round:rubric` (store) or the run's `dedupe_key` (data); `cost_usd` = faithful (priced as of `ts`'s date), `cost_today` = forecast (today's prices), `cost_recorded` = engine's original
 - `review_rounds(key, source, pr, round_no, ts, day, verdict, rubrics_run, input_tokens, cached_input_tokens, output_tokens, reasoning_tokens, cost, est_frac)` — per-round aggregate
 - `prs(pr, state, additions, deletions, created_at, merged_at, closed_at, title, author_agent, author_name, fetched_at)`
 
