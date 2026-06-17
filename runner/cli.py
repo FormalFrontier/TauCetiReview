@@ -184,6 +184,13 @@ def main():
                          "have available (claude, codex)")
     ap.add_argument("--no-mathlib", action="store_true",
                     help="skip fetching the pinned Mathlib source (faster; reuse checks weaker)")
+    ap.add_argument("--roadmap-dir", default="",
+                    help="use a pre-staged roadmap tree (copied into the workspace) instead of cloning "
+                         "--roadmap-repo. For sandboxes whose network can't reach a second repo "
+                         "(e.g. a repo-scoped review bubble): stage the roadmap on the host and mount it.")
+    ap.add_argument("--mathlib-dir", default="",
+                    help="use a pre-staged Mathlib source tree (copied into the workspace) instead of "
+                         "fetching it. Same motivation as --roadmap-dir; ignored with --no-mathlib.")
     ap.add_argument("--repo-dir", default="",
                     help="path to a TauCetiReview checkout (default: auto-detect / cached clone)")
     ap.add_argument("--workdir", default="", help="workspace dir (default: a fresh temp dir)")
@@ -295,12 +302,18 @@ def main():
     run(["git", "-C", str(work / "code"), "fetch", "-q", "--depth", "1", "origin", head], quiet=True)
     run(["git", "-C", str(work / "code"), "checkout", "-q", head], quiet=True)
     shutil.rmtree(work / "code" / ".git", ignore_errors=True)
-    run(["git", "clone", "-q", "--depth", "1", f"https://github.com/{a.roadmap_repo}",
-         str(work / "roadmap")])
-    shutil.rmtree(work / "roadmap" / ".git", ignore_errors=True)
+    if a.roadmap_dir:   # pre-staged (e.g. mounted into a network-restricted bubble); copy, don't clone
+        shutil.copytree(a.roadmap_dir, work / "roadmap", ignore=shutil.ignore_patterns(".git"))
+    else:
+        run(["git", "clone", "-q", "--depth", "1", f"https://github.com/{a.roadmap_repo}",
+             str(work / "roadmap")])
+        shutil.rmtree(work / "roadmap" / ".git", ignore_errors=True)
 
     mathlib_args = []
-    if not a.no_mathlib:
+    if not a.no_mathlib and a.mathlib_dir:   # pre-staged Mathlib source; copy into the workspace
+        shutil.copytree(a.mathlib_dir, work / "mathlib", ignore=shutil.ignore_patterns(".git"))
+        mathlib_args = ["--mathlib-path", "mathlib"]
+    elif not a.no_mathlib:
         # Mathlib rev comes from the PR head's own manifest here (local trusted use); CI instead
         # pins it from the base repo to avoid evaluating attacker-controlled manifests.
         manifest = work / "code" / "lake-manifest.json"
@@ -389,9 +402,14 @@ def main():
     if a.shadow:
         print(f"shadow arm `{a.label}` complete — archived, nothing posted.", file=sys.stderr)
     elif a.post:
-        token = run(["gh", "auth", "token"], capture=True, quiet=True).stdout.strip()
+        token = run(["gh", "auth", "token"], capture=True, quiet=True, allow_fail=True).stdout.strip()
         if not token:
-            die("`gh auth token` returned nothing; run `gh auth login` first.")
+            # A sandbox may authenticate `gh` via an ambient GH_TOKEN (e.g. a repo-scoped bubble proxy
+            # token in /etc/profile.d) without `gh auth token` echoing it. Fall back to that.
+            token = os.environ.get("GH_TOKEN", "")
+        if not token:
+            die("no GitHub token: `gh auth token` returned nothing and GH_TOKEN is unset; "
+                "run `gh auth login` first.")
         print("posting scoreboard + threads to the PR as you…", file=sys.stderr)
         env = {**os.environ, "GH_TOKEN": token}
         run([sys.executable, str(repo_dir / "runner" / "post.py"),
