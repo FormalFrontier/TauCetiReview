@@ -148,17 +148,28 @@ def rubrics_repo_sha(repo_dir):
     return (r.stdout.strip() if r.returncode == 0 else ""), True
 
 
-def fetch_thread_replies(repo, pr):
+def fetch_thread_replies(repo, pr, exclude_login=""):
     """Gather author replies on the per-rubric review threads from GitHub, keyed by rubric, so a
     re-review audits the author's contest rather than re-judging the diff blind. A thread root
     carries a `<!--tauceti-rubric:NAME-->` marker; a reply is any review comment whose
-    `in_reply_to_id` points at such a root."""
-    r = run(["gh", "api", f"/repos/{repo}/pulls/{pr}/comments?per_page=100"],
+    `in_reply_to_id` points at such a root.
+
+    Paginated (`--paginate --jq '.[]'` emits one comment per line — a bare --paginate would
+    concatenate per-page arrays into invalid JSON), so a busy PR cannot hide a root or a reply past
+    page one. Each reply keeps its monotonic `id` (the dedupe/watermark key) and `ts`. Our own
+    direct contest answers carry a `tauceti-reply:` marker and any comment by `exclude_login` is the
+    poster's own, so both are dropped — the bot can never read its own reply as a fresh contest."""
+    r = run(["gh", "api", "--paginate", "--jq", ".[]",
+             f"/repos/{repo}/pulls/{pr}/comments?per_page=100"],
             capture=True, quiet=True, allow_fail=True)
-    try:
-        comments = json.loads(r.stdout)
-    except Exception:
-        return {}
+    comments = []
+    for line in (r.stdout or "").splitlines():
+        line = line.strip()
+        if line:
+            try:
+                comments.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
     root_rubric = {}
     for c in comments:
         if c.get("in_reply_to_id") is None:
@@ -168,9 +179,14 @@ def fetch_thread_replies(repo, pr):
     replies = {}
     for c in comments:
         rubric = root_rubric.get(c.get("in_reply_to_id"))
-        if rubric:
-            replies.setdefault(rubric, []).append(
-                {"by": (c.get("user") or {}).get("login", "author"), "body": c.get("body", "")})
+        if not rubric:
+            continue
+        body = c.get("body", "") or ""
+        login = (c.get("user") or {}).get("login", "author")
+        if "tauceti-reply:" in body or (exclude_login and login == exclude_login):
+            continue  # our own contest answer / the poster's own comment — never a fresh contest
+        replies.setdefault(rubric, []).append(
+            {"id": c.get("id"), "ts": c.get("created_at", ""), "by": login, "body": body})
     return replies
 
 
@@ -413,7 +429,7 @@ def main():
     # Read the author's replies on the rubric threads from GitHub and pass them to the engine, so a
     # re-review audits the contest (e.g. a push-back on a finding) instead of re-judging the diff
     # blind. This is the local equivalent of CI's reply-trigger flow.
-    replies = fetch_thread_replies(a.repo, a.pr)
+    replies = fetch_thread_replies(a.repo, a.pr, a.submitted_by)
     replies_path = work / "replies.json"
     replies_path.write_text(json.dumps(replies))
     if replies:
