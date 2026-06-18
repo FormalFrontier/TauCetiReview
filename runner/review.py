@@ -918,7 +918,15 @@ def main():
     if a.replies_json and pathlib.Path(a.replies_json).exists():
         for rubric, reps in json.loads(pathlib.Path(a.replies_json).read_text()).items():
             if reps and rubric in candidates:
-                state_map.setdefault(rubric, {})["author_replies"] = reps
+                cf = state_map.setdefault(rubric, {})
+                cf["author_replies"] = reps
+                # Hydrate the thread root id from GitHub (authoritative) when the local store does not
+                # know it, so a contest answer can ALWAYS be posted in-thread — otherwise a fresh or
+                # cross-machine store would queue+watermark the contest but skip the reply, swallowing
+                # the answer. Only fills a missing id; never overwrites a known one.
+                root_id = next((r.get("root_id") for r in reps if r.get("root_id")), None)
+                if root_id and not (cf.get("thread") or {}).get("comment_id"):
+                    cf["thread"] = {**(cf.get("thread") or {}), "comment_id": root_id}
 
     # init mode: post an in-progress scoreboard immediately, before any model runs. No keys, no
     # diff, no ledger writes — just render the current states under a "running now" header and emit
