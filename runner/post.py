@@ -42,6 +42,88 @@ def gh_api(method, endpoint, fields=None, body_file=None, failures=None, action=
         return {}
 
 
+SCOREBOARD_MARKER = "<!--tauceti-scoreboard-->"
+TRUSTED_ASSOC = {"OWNER", "MEMBER", "COLLABORATOR"}
+REVIEW_BOT = "tauceti-review-bot[bot]"
+
+
+def find_scoreboard_comments(repo, pr):
+    """Existing trusted scoreboard comment ids on the PR, newest first.
+
+    So a review run whose local store does not know the scoreboard's comment id (the PR was last
+    scored by CI or another machine) edits the existing comment in place instead of posting a
+    duplicate. Trust mirrors the consumer side: the scoreboard marker AND a repo-associated author
+    (or the review bot) — a forged scoreboard from an untrusted commenter is ignored. Best-effort:
+    returns [] on any API error."""
+    r = subprocess.run(
+        ["gh", "api", "--paginate", f"/repos/{repo}/issues/{pr}/comments", "--jq",
+         '.[] | select((.body // "") | contains("' + SCOREBOARD_MARKER + '")) '
+         '| {id, login: (.user.login // ""), assoc: (.author_association // ""), '
+         'updated_at: (.updated_at // "")}'],
+        text=True, capture_output=True)
+    if r.returncode != 0:
+        print(f"scoreboard lookup failed: {r.stderr[-300:]}", file=sys.stderr)
+        return []
+    out = []
+    for line in r.stdout.splitlines():
+        if not line.strip():
+            continue
+        try:
+            c = json.loads(line)
+        except Exception:
+            continue
+        if c.get("assoc") in TRUSTED_ASSOC or c.get("login") == REVIEW_BOT:
+            out.append(c)
+    out.sort(key=lambda c: c.get("updated_at", ""), reverse=True)
+    return [c["id"] for c in out]
+
+
+def upsert_scoreboard(repo, pr, body_file, plan_sb_id, pr_state, failures):
+    """Publish the PR's single scoreboard comment, editing in place rather than duplicating.
+
+    Order of preference for the comment to edit: our own store/plan id (always editable by us), then
+    the newest existing trusted scoreboard discovered on GitHub (covers a PR last scored by CI or
+    another machine). Only create a new comment if none exists, or if the existing one was authored
+    by a different account and so cannot be edited (GitHub allows PATCH/DELETE only by the author).
+    Older trusted scoreboards are collapsed best-effort. Returns (sb_id, ok)."""
+    sb_id = pr_state.get("scoreboard_comment_id") or plan_sb_id
+    known_ours = bool(sb_id)             # an id from our own store/plan is one we can edit
+    stale_dupes = []                     # older trusted scoreboards to collapse
+    if not sb_id:
+        existing = find_scoreboard_comments(repo, pr)
+        if existing:
+            sb_id, stale_dupes = existing[0], existing[1:]
+    ok = False
+    # For our own id a PATCH failure is a real error (record it); for an adopted id it may simply be
+    # a comment another account posted, so fall through to POST our own instead of failing.
+    if sb_id and gh_api("PATCH", f"/repos/{repo}/issues/comments/{sb_id}", body_file=body_file,
+                        failures=failures if known_ours else None,
+                        action="scoreboard PATCH") is not None:
+        pr_state["scoreboard_comment_id"] = sb_id
+        ok = True
+    elif known_ours:
+        pass                             # our edit failed; recorded in `failures`, never duplicated
+    else:
+        if sb_id:
+            print(f"post.py: cannot edit adopted scoreboard {sb_id} (different author); "
+                  "posting our own", file=sys.stderr)
+        resp = gh_api("POST", f"/repos/{repo}/issues/{pr}/comments",
+                      body_file=body_file, failures=failures, action="scoreboard POST")
+        if resp and resp.get("id"):
+            pr_state["scoreboard_comment_id"] = sb_id = resp["id"]
+            ok = True
+        else:
+            print("post.py: scoreboard create failed", file=sys.stderr)
+            sb_id = None
+    # Collapse older duplicate scoreboards left by past runs (best-effort: only comments we authored
+    # are deletable, so a cross-author leftover may remain — the newest-wins read keeps state right).
+    for dup in stale_dupes:
+        if dup and dup != sb_id:
+            gh_api("DELETE", f"/repos/{repo}/issues/comments/{dup}",
+                   action=f"scoreboard collapse {dup}")
+    return sb_id, ok
+
+
 def resolve_thread(repo, pr, comment_id):
     """Resolve (collapse) the review thread whose root comment is `comment_id`, so a finding the
     author has cleared stops cluttering the conversation. Best-effort; failures are logged."""
@@ -91,22 +173,10 @@ def main():
     failures, posted_threads = [], {}
     scoreboard_ok = False
 
-    # 1) Scoreboard: edit in place if we know its id, else create and remember it.
-    sb_id = pr_state.get("scoreboard_comment_id") or plan.get("scoreboard_comment_id")
-    if sb_id:
-        if gh_api("PATCH", f"/repos/{a.repo}/issues/comments/{sb_id}",
-                  body_file=plan["scoreboard_body"], failures=failures,
-                  action="scoreboard PATCH") is not None:
-            scoreboard_ok = True
-    else:
-        resp = gh_api("POST", f"/repos/{a.repo}/issues/{a.pr}/comments",
-                      body_file=plan["scoreboard_body"], failures=failures,
-                      action="scoreboard POST")
-        if resp and resp.get("id"):
-            pr_state["scoreboard_comment_id"] = sb_id = resp["id"]
-            scoreboard_ok = True
-        else:
-            print("post.py: scoreboard create failed", file=sys.stderr)
+    # 1) Scoreboard: one comment per PR, edited in place (discovered from GitHub if our store does
+    #    not know its id), with older duplicates collapsed.
+    sb_id, scoreboard_ok = upsert_scoreboard(
+        a.repo, a.pr, plan["scoreboard_body"], plan.get("scoreboard_comment_id"), pr_state, failures)
 
     # 2) Per-rubric threads (only rubrics that ran this round appear in the plan).
     for t in plan.get("threads", []):
