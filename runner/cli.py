@@ -28,6 +28,7 @@ import os
 import pathlib
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -210,11 +211,13 @@ def fetch_thread_replies(repo, pr):
 
 
 def issue_comments(repo, pr):
-    """All issue comments on a PR, newest-or-oldest order as GitHub returns them. Best-effort: a fetch
-    failure yields [] (we then proceed unclaimed — a possible duplicate review, never corruption)."""
+    """All issue comments on a PR. Returns None on a fetch FAILURE (distinct from an empty list), so the
+    caller can tell "no markers" from "couldn't look" and not mistake an API blip for a clear field."""
     r = run(["gh", "api", "--paginate", "--jq", ".[]",
              f"/repos/{repo}/issues/{pr}/comments?per_page=100"],
             capture=True, quiet=True, allow_fail=True)
+    if r.returncode != 0:
+        return None
     out = []
     for line in (r.stdout or "").splitlines():
         line = line.strip()
@@ -227,9 +230,9 @@ def issue_comments(repo, pr):
 
 
 def covered_providers(comments, head, now, *, exclude_nonce, max_id=None):
-    """Set of providers that an UNEXPIRED in-progress marker on this head — posted by a different run
-    (nonce ≠ exclude_nonce) — already covers. With max_id set, only count markers whose comment id is
-    lower (the deterministic tiebreak for a simultaneous post: lowest id wins a provider)."""
+    """Set of providers that an UNEXPIRED in-progress marker for this EXACT head — posted by a different
+    run (nonce ≠ exclude_nonce) — already covers. With max_id set, only count markers whose comment id
+    is lower (the deterministic tiebreak for a simultaneous post: lowest id wins a provider)."""
     cov = set()
     for c in comments:
         m = COORD_RE.search(c.get("body") or "")
@@ -242,7 +245,8 @@ def covered_providers(comments, head, now, *, exclude_nonce, max_id=None):
         exp = d.get("expires_at")
         if not isinstance(exp, int) or exp <= now or d.get("nonce") == exclude_nonce:
             continue
-        if str(d.get("head") or "")[:12] != head[:12]:
+        marker_head = d.get("head")
+        if not isinstance(marker_head, str) or marker_head != head:  # exact: a new push is a new unit
             continue
         cid = c.get("id")
         if max_id is not None and not (isinstance(cid, int) and cid < max_id):
@@ -276,19 +280,69 @@ def delete_marker(repo, comment_id):
         quiet=True, allow_fail=True)
 
 
+# Markers this process owns and must remove on exit. atexit alone misses signals, so SIGTERM/SIGINT are
+# routed through sys.exit (which DOES run atexit); SIGKILL can't be caught, which is what the TTL backs.
+_ACTIVE_MARKERS = []
+_CLEANUP_INSTALLED = False
+
+
+def _delete_active_markers():
+    while _ACTIVE_MARKERS:
+        repo, cid = _ACTIVE_MARKERS.pop()
+        delete_marker(repo, cid)
+
+
+def _install_marker_cleanup():
+    """Arm marker deletion on normal exit and on SIGTERM/SIGINT. Idempotent; installed only once we
+    actually own a marker, so a non-coordinating run never changes signal disposition."""
+    global _CLEANUP_INSTALLED
+    if _CLEANUP_INSTALLED:
+        return
+    _CLEANUP_INSTALLED = True
+    atexit.register(_delete_active_markers)
+    for sig, code in ((signal.SIGTERM, 143), (signal.SIGINT, 130)):
+        try:
+            signal.signal(sig, lambda *_a, _c=code: sys.exit(_c))
+        except (ValueError, OSError):
+            pass  # not the main thread / unsupported — atexit + TTL still apply
+
+
+def _recheck_lost(repo, pr, head, nonce, cid):
+    """After posting, find which providers a LOWER-id foreign marker covers (we must yield those). Poll
+    until our OWN comment is visible — so the list is current enough for the lowest-id rule to be real,
+    not fooled by replication lag where neither poster yet sees the other — or a short deadline passes.
+    Time is re-read each scan so an expiring lower-id marker isn't honored past its TTL."""
+    lost = set()
+    for delay in (0.0, 0.4, 0.8, 1.5):
+        if delay:
+            time.sleep(delay)
+        comments = issue_comments(repo, pr)
+        if comments is None:
+            continue
+        lost = covered_providers(comments, head, int(time.time()), exclude_nonce=nonce, max_id=cid)
+        if lost or any(c.get("id") == cid for c in comments):
+            break
+    return lost
+
+
 def coordinate(repo, pr, head, avail, submitted_by):
     """[COOP] de-contend concurrent reviewers via a review-in-progress comment. Returns the subset of
     `avail` this run should actually review (providers no live foreign marker already covers), having
-    posted our own marker for that subset and registered its deletion at exit. An empty return means
+    posted our own marker for exactly that subset and armed its deletion at exit. An empty return means
     every provider is already in flight elsewhere — skip the whole run and spend nothing.
 
-    Not an atomic CAS, so after posting we re-read and drop any provider a LOWER-id foreign marker
-    covers (lowest id wins), which collapses the sub-second simultaneous-post window. A read/post
-    failure (e.g. no comment access) proceeds unclaimed: a possible duplicate review, never corruption.
+    Not an atomic CAS, so after posting we re-read (waiting until our own comment is visible) and drop
+    any provider a LOWER-id foreign marker covers — lowest id wins, which collapses the simultaneous-post
+    window. A read/post failure (e.g. no comment access) proceeds unclaimed: a possible duplicate review,
+    never corruption.
     """
     nonce = uuid.uuid4().hex
-    now = int(time.time())
-    cov = covered_providers(issue_comments(repo, pr), head, now, exclude_nonce=nonce)
+    comments = issue_comments(repo, pr)
+    if comments is None:
+        print("note: couldn't list PR comments to check for an in-flight review; proceeding and still "
+              "posting our marker (a concurrent duplicate review is possible).", file=sys.stderr)
+        comments = []
+    cov = covered_providers(comments, head, int(time.time()), exclude_nonce=nonce)
     run_set = [p for p in avail if p not in cov]
     if not run_set:
         print(f"PR #{pr} @ {head[:12]} is already being reviewed ({','.join(sorted(cov))}) — "
@@ -299,15 +353,25 @@ def coordinate(repo, pr, head, avail, submitted_by):
         print("note: couldn't post a review-in-progress marker (no comment access?); proceeding "
               "without de-contention — a concurrent duplicate review is possible.", file=sys.stderr)
         return run_set
-    lost = covered_providers(issue_comments(repo, pr), head, now, exclude_nonce=nonce, max_id=cid)
-    run_set = [p for p in run_set if p not in lost]
-    if not run_set:
+    lost = _recheck_lost(repo, pr, head, nonce, cid)
+    survivors = [p for p in run_set if p not in lost]
+    if not survivors:
         print(f"PR #{pr} @ {head[:12]}: lost the post race ({','.join(sorted(lost))} covered first) — "
               f"skipping.", file=sys.stderr)
         delete_marker(repo, cid)
         return []
-    atexit.register(delete_marker, repo, cid)
-    return run_set
+    if set(survivors) != set(run_set):
+        # We over-claimed: the marker still advertises providers we just lost, which would needlessly
+        # make others wait on work we won't do. Replace it with one scoped to what we'll actually run.
+        delete_marker(repo, cid)
+        cid = post_marker(repo, pr, head, survivors, nonce, submitted_by)
+        if cid is None:
+            print(f"note: couldn't repost the narrowed marker; proceeding unclaimed for "
+                  f"{','.join(survivors)} (duplicate review possible).", file=sys.stderr)
+            return survivors
+    _ACTIVE_MARKERS.append((repo, cid))
+    _install_marker_cleanup()
+    return survivors
 
 
 def main():
