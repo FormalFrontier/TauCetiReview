@@ -33,8 +33,16 @@ OPENROUTER_MODELS = {
 # window per model; the analysis (tauceti-review-costs) prices each past run at the window covering
 # its run date. review.py runs from the engine checkout, so the file always sits beside it. The
 # daily budget and every archived run's cost_usd derive from these rates.
-_PRICE_WINDOWS = json.loads(
-    (pathlib.Path(__file__).resolve().parent / "prices.json").read_text())["models"]
+PRICES_PATH = pathlib.Path(__file__).resolve().parent / "prices.json"
+
+
+def load_price_windows():
+    """The dated price table {model: [window, ...]} straight from prices.json. Shared by the engine
+    (newest window per model) and the cost analytics (tauceti-review-costs, dated per run)."""
+    return json.loads(PRICES_PATH.read_text()).get("models", {})
+
+
+_PRICE_WINDOWS = load_price_windows()
 
 
 
@@ -53,8 +61,7 @@ DEFAULT_PRICE = (3.0, 15.0)  # last-resort fallback; require_priced() makes it u
 
 # The exact prices.json that produced this run's costs — stamped onto every archived run so a
 # stored cost_usd is auditable and its staleness is detectable (rates change; the tokens don't).
-PRICES_SHA = hashlib.sha256(
-    (pathlib.Path(__file__).resolve().parent / "prices.json").read_bytes()).hexdigest()[:12]
+PRICES_SHA = hashlib.sha256(PRICES_PATH.read_bytes()).hexdigest()[:12]
 
 # Sonnet is a cheaper claude-family A/B arm (the claude CLI pinned to Sonnet); a named constant so
 # the price-coverage guard and its test see the same id the dispatcher uses.
