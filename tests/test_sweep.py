@@ -55,6 +55,43 @@ def test_repeated_eviction_not_behind_flags():
     assert action == "flag", action
 
 
+def test_eviction_cutoff_uses_latest_of_commit_and_force_push():
+    import datetime as dt
+    t = lambda s: dt.datetime.fromisoformat(s)  # noqa: E731
+    head = t("2026-06-20T00:00:00+00:00")
+    fp = [t("2026-06-22T00:00:00+00:00"), t("2026-06-21T00:00:00+00:00")]
+    # A force-push after the commit date moves the cutoff forward, so a prior head's evictions are not
+    # counted against the current head.
+    assert sweep.eviction_cutoff(head, fp) == t("2026-06-22T00:00:00+00:00")
+    assert sweep.eviction_cutoff(head, []) == head
+
+
+def test_count_evictions_scoped_by_cutoff():
+    import datetime as dt
+    cutoff = dt.datetime.fromisoformat("2026-06-21T00:00:00+00:00")
+    events = [
+        {"event": "removed_from_merge_queue", "created_at": "2026-06-20T00:00:00Z"},  # before cutoff
+        {"event": "removed_from_merge_queue", "created_at": "2026-06-22T00:00:00Z"},  # after  cutoff
+        {"event": "removed_from_merge_queue", "created_at": "2026-06-23T00:00:00Z"},  # after  cutoff
+        {"event": "added_to_merge_queue", "created_at": "2026-06-24T00:00:00Z"},      # wrong  event
+    ]
+    assert sweep.count_evictions(events, cutoff) == 2
+
+
+def test_classify_update_distinguishes_race_from_conflict():
+    # success
+    assert sweep.classify_update(0, "") == "updated"
+    # a racing push is a 422 too — must be read as a benign skip, NOT a conflict/needs-rebase
+    assert sweep.classify_update(1, "HTTP 422: expected_head_sha 'abc' does not match") == "skip"
+    assert sweep.classify_update(1, "the head branch was modified; please review") == "skip"
+    # a genuine conflict
+    assert sweep.classify_update(1, "HTTP 422: merge conflict between base and head") == "conflict"
+    # an unknown validation 422 is benign (retried), not a hard error
+    assert sweep.classify_update(1, "HTTP 422: Unprocessable Entity") == "skip"
+    # auth / server faults are real errors
+    assert sweep.classify_update(1, "HTTP 403: Resource not accessible by integration") == "error"
+
+
 def _scoreboard(head, states):
     meta = "<!--tauceti-meta:v1 " + json.dumps({"head_sha": head, "states": states}) + "-->"
     return [{"body": "<!--tauceti-scoreboard-->\n" + meta, "updated_at": "2026-06-26T00:00:00Z"}]
